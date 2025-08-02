@@ -1,225 +1,209 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.5">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Snake Game with Orange Power-Up</title>
+<style>
+  body {
+    margin: 0;
+    background: black;
+    overflow: hidden;
+    color: white;
+    font-family: Arial, sans-serif;
+  }
+  #score {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 24px;
+    z-index: 10;
+    user-select: none;
+  }
+  #game-over {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: red;
+    font-size: 36px;
+    text-align: center;
+    display: none;
+    user-select: none;
+  }
+</style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1">&lt;meta charset="UTF-8" /&gt;</p>
-<p class="p1">&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;</p>
-<p class="p1">&lt;title&gt;Snake Game with Orange Power-Up&lt;/title&gt;</p>
-<p class="p1">&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>body {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>margin: 0;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>background: black;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>overflow: hidden;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>font-family: Arial, sans-serif;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>#score {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>position: fixed;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>top: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>left: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>font-size: 24px;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>z-index: 10;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>user-select: none;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>#game-over {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>position: fixed;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>top: 50%;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>left: 50%;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>transform: translate(-50%, -50%);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>color: red;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>font-size: 36px;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>text-align: center;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>display: none;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>user-select: none;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p1">&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p1">&lt;div id="score"&gt;Score: 0&lt;/div&gt;</p>
-<p class="p1">&lt;div id="game-over"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>Game Over!&lt;br /&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>Press R to Restart</p>
-<p class="p1">&lt;/div&gt;</p>
-<p class="p1">&lt;canvas id="game"&gt;&lt;/canvas&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;script&gt;</p>
-<p class="p1">(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const CELL_SIZE = 20;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let canvas, ctx;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let width, height, columns, rows;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>let snake;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let direction;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let food;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let foodIsPowerup;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let powerupActive = false;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let powerupEndTime = 0;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let snakeColor = "green";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let score = 0;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>let gameOver = false;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const POWERUP_DURATION = 10000; // ms</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const UPDATE_DELAY = 100; // ms</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>const scoreDiv = document.getElementById("score");</p>
-<p class="p1"><span class="Apple-converted-space">  </span>const gameOverDiv = document.getElementById("game-over");</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function init() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>canvas = document.getElementById("game");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ctx = canvas.getContext("2d");</p>
-<p class="p1"><span class="Apple-converted-space">    </span>resize();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>resetGame();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>window.addEventListener("resize", resize);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>window.addEventListener("keydown", keyDownHandler);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>setInterval(update, UPDATE_DELAY);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function resize() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>width = window.innerWidth;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>height = window.innerHeight;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>canvas.width = width;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>canvas.height = height;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>columns = Math.floor(width / CELL_SIZE);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>rows = Math.floor(height / CELL_SIZE);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function resetGame() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>snakeColor = "green";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>powerupActive = false;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>powerupEndTime = 0;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>gameOver = false;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>score = 0;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>direction = "Right";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>snake = [</p>
-<p class="p1"><span class="Apple-converted-space">      </span>{x: Math.floor(columns/2), y: Math.floor(rows/2)},</p>
-<p class="p1"><span class="Apple-converted-space">      </span>{x: Math.floor(columns/2) - 1, y: Math.floor(rows/2)},</p>
-<p class="p1"><span class="Apple-converted-space">      </span>{x: Math.floor(columns/2) - 2, y: Math.floor(rows/2)}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>];</p>
-<p class="p1"><span class="Apple-converted-space">    </span>placeFood();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>scoreDiv.textContent = "Score: " + score;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>gameOverDiv.style.display = "none";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function placeFood() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>while (true) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>let x = Math.floor(Math.random() * columns);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>let y = Math.floor(Math.random() * rows);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (!snake.some(seg =&gt; seg.x === x &amp;&amp; seg.y === y)) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>food = {x, y};</p>
-<p class="p1"><span class="Apple-converted-space">        </span>foodIsPowerup = Math.random() &lt; 0.05;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>break;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function keyDownHandler(e) {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (gameOver &amp;&amp; (e.key === "r" || e.key === "R")) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>resetGame();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const opposites = {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>"ArrowUp": "ArrowDown",</p>
-<p class="p1"><span class="Apple-converted-space">      </span>"ArrowDown": "ArrowUp",</p>
-<p class="p1"><span class="Apple-converted-space">      </span>"ArrowLeft": "ArrowRight",</p>
-<p class="p1"><span class="Apple-converted-space">      </span>"ArrowRight": "ArrowLeft"</p>
-<p class="p1"><span class="Apple-converted-space">    </span>};</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (opposites[e.key] !== direction) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>direction = e.key;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function update() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (gameOver) return;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (powerupActive &amp;&amp; Date.now() &gt; powerupEndTime) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>powerupActive = false;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>snakeColor = "green";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Calculate new head position</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let head = {...snake[0]};</p>
-<p class="p1"><span class="Apple-converted-space">    </span>switch(direction) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>case "ArrowRight": head.x += 1; break;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>case "ArrowLeft": head.x -= 1; break;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>case "ArrowUp": head.y -= 1; break;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>case "ArrowDown": head.y += 1; break;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Check collisions with walls</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (head.x &lt; 0 || head.x &gt;= columns || head.y &lt; 0 || head.y &gt;= rows) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>endGame();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Check collisions with self</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (snake.some(seg =&gt; seg.x === head.x &amp;&amp; seg.y === head.y)) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>endGame();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>snake.unshift(head);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Check food collision</p>
-<p class="p1"><span class="Apple-converted-space">    </span>if (head.x === food.x &amp;&amp; head.y === food.y) {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>score++;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (foodIsPowerup) activatePowerup();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>placeFood();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>scoreDiv.textContent = "Score: " + score;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>snake.pop();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>draw();</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function activatePowerup() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>powerupActive = true;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>snakeColor = "orange";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>powerupEndTime = Date.now() + POWERUP_DURATION;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function drawCell(x, y, color) {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ctx.fillStyle = color;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ctx.strokeStyle = "black";</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function draw() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>ctx.clearRect(0, 0, width, height);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Draw food</p>
-<p class="p1"><span class="Apple-converted-space">    </span>drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Draw snake</p>
-<p class="p1"><span class="Apple-converted-space">    </span>snake.forEach((seg, i) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const color = i === 0 ? "lime" : snakeColor;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>drawCell(seg.x, seg.y, color);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>});</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>function endGame() {</p>
-<p class="p1"><span class="Apple-converted-space">    </span>gameOver = true;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>gameOverDiv.style.display = "block";</p>
-<p class="p1"><span class="Apple-converted-space">  </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>init();</p>
-<p class="p1">})();</p>
-<p class="p1">&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+<div id="score">Score: 0</div>
+<div id="game-over">
+  Game Over!<br />
+  Press R to Restart
+</div>
+<canvas id="game"></canvas>
+
+<script>
+(() => {
+  const CELL_SIZE = 20;
+  let canvas, ctx;
+  let width, height, columns, rows;
+
+  let snake;
+  let direction;
+  let food;
+  let foodIsPowerup;
+  let powerupActive = false;
+  let powerupEndTime = 0;
+  let snakeColor = "green";
+  let score = 0;
+  let gameOver = false;
+  const POWERUP_DURATION = 10000; // ms
+  const UPDATE_DELAY = 100; // ms
+
+  const scoreDiv = document.getElementById("score");
+  const gameOverDiv = document.getElementById("game-over");
+
+  function init() {
+    canvas = document.getElementById("game");
+    ctx = canvas.getContext("2d");
+    resize();
+    resetGame();
+    window.addEventListener("resize", resize);
+    window.addEventListener("keydown", keyDownHandler);
+    setInterval(update, UPDATE_DELAY);
+  }
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    columns = Math.floor(width / CELL_SIZE);
+    rows = Math.floor(height / CELL_SIZE);
+  }
+
+  function resetGame() {
+    snakeColor = "green";
+    powerupActive = false;
+    powerupEndTime = 0;
+    gameOver = false;
+    score = 0;
+    direction = "Right";
+    snake = [
+      {x: Math.floor(columns/2), y: Math.floor(rows/2)},
+      {x: Math.floor(columns/2) - 1, y: Math.floor(rows/2)},
+      {x: Math.floor(columns/2) - 2, y: Math.floor(rows/2)}
+    ];
+    placeFood();
+    scoreDiv.textContent = "Score: " + score;
+    gameOverDiv.style.display = "none";
+  }
+
+  function placeFood() {
+    while (true) {
+      let x = Math.floor(Math.random() * columns);
+      let y = Math.floor(Math.random() * rows);
+      if (!snake.some(seg => seg.x === x && seg.y === y)) {
+        food = {x, y};
+        foodIsPowerup = Math.random() < 0.05;
+        break;
+      }
+    }
+  }
+
+  function keyDownHandler(e) {
+    if (gameOver && (e.key === "r" || e.key === "R")) {
+      resetGame();
+      return;
+    }
+    const opposites = {
+      "ArrowUp": "ArrowDown",
+      "ArrowDown": "ArrowUp",
+      "ArrowLeft": "ArrowRight",
+      "ArrowRight": "ArrowLeft"
+    };
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+      if (opposites[e.key] !== direction) {
+        direction = e.key;
+      }
+    }
+  }
+
+  function update() {
+    if (gameOver) return;
+
+    if (powerupActive && Date.now() > powerupEndTime) {
+      powerupActive = false;
+      snakeColor = "green";
+    }
+
+    // Calculate new head position
+    let head = {...snake[0]};
+    switch(direction) {
+      case "ArrowRight": head.x += 1; break;
+      case "ArrowLeft": head.x -= 1; break;
+      case "ArrowUp": head.y -= 1; break;
+      case "ArrowDown": head.y += 1; break;
+    }
+
+    // Check collisions with walls
+    if (head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows) {
+      endGame();
+      return;
+    }
+    // Check collisions with self
+    if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+      endGame();
+      return;
+    }
+
+    snake.unshift(head);
+
+    // Check food collision
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      if (foodIsPowerup) activatePowerup();
+      placeFood();
+      scoreDiv.textContent = "Score: " + score;
+    } else {
+      snake.pop();
+    }
+
+    draw();
+  }
+
+  function activatePowerup() {
+    powerupActive = true;
+    snakeColor = "orange";
+    powerupEndTime = Date.now() + POWERUP_DURATION;
+  }
+
+  function drawCell(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    ctx.strokeStyle = "black";
+    ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw food
+    drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
+
+    // Draw snake
+    snake.forEach((seg, i) => {
+      const color = i === 0 ? "lime" : snakeColor;
+      drawCell(seg.x, seg.y, color);
+    });
+  }
+
+  function endGame() {
+    gameOver = true;
+    gameOverDiv.style.display = "block";
+  }
+
+  init();
+})();
+</script>
 </body>
 </html>
