@@ -1,209 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Snake Game with Orange Power-Up</title>
-<style>
-  body {
-    margin: 0;
-    background: black;
-    overflow: hidden;
-    color: white;
-    font-family: Arial, sans-serif;
-  }
-  #score {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    font-size: 24px;
-    z-index: 10;
-    user-select: none;
-  }
-  #game-over {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: red;
-    font-size: 36px;
-    text-align: center;
-    display: none;
-    user-select: none;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Game – Mobile Friendly</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #score {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      z-index: 10;
+      user-select: none;
+    }
+
+    #game-over {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: red;
+      font-size: 36px;
+      text-align: center;
+      display: none;
+      user-select: none;
+      z-index: 20;
+    }
+
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+
+    #mobile-controls {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 15;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 2px solid white;
+      padding: 10px 20px;
+      font-size: 18px;
+      border-radius: 10px;
+      user-select: none;
+    }
+
+    .btn:active {
+      background: white;
+      color: black;
+    }
+  </style>
 </head>
 <body>
-<div id="score">Score: 0</div>
-<div id="game-over">
-  Game Over!<br />
-  Press R to Restart
-</div>
-<canvas id="game"></canvas>
+  <div id="score">Score: 0</div>
+  <div id="game-over">
+    Game Over!<br />
+    Tap anywhere or press R to Restart
+  </div>
+  <canvas id="game"></canvas>
 
-<script>
-(() => {
-  const CELL_SIZE = 20;
-  let canvas, ctx;
-  let width, height, columns, rows;
+  <div id="mobile-controls">
+    <div class="btn" onclick="setDirection('ArrowLeft')">⬅</div>
+    <div class="btn" onclick="setDirection('ArrowUp')">⬆</div>
+    <div class="btn" onclick="setDirection('ArrowDown')">⬇</div>
+    <div class="btn" onclick="setDirection('ArrowRight')">➡</div>
+  </div>
 
-  let snake;
-  let direction;
-  let food;
-  let foodIsPowerup;
-  let powerupActive = false;
-  let powerupEndTime = 0;
-  let snakeColor = "green";
-  let score = 0;
-  let gameOver = false;
-  const POWERUP_DURATION = 10000; // ms
-  const UPDATE_DELAY = 100; // ms
+  <script>
+    (() => {
+      const CELL_SIZE = 20;
+      let canvas, ctx;
+      let width, height, columns, rows;
+      let snake;
+      let direction;
+      let food;
+      let foodIsPowerup;
+      let powerupActive = false;
+      let powerupEndTime = 0;
+      let snakeColor = "green";
+      let score = 0;
+      let gameOver = false;
+      const POWERUP_DURATION = 10000;
+      const UPDATE_DELAY = 100;
 
-  const scoreDiv = document.getElementById("score");
-  const gameOverDiv = document.getElementById("game-over");
+      const scoreDiv = document.getElementById("score");
+      const gameOverDiv = document.getElementById("game-over");
 
-  function init() {
-    canvas = document.getElementById("game");
-    ctx = canvas.getContext("2d");
-    resize();
-    resetGame();
-    window.addEventListener("resize", resize);
-    window.addEventListener("keydown", keyDownHandler);
-    setInterval(update, UPDATE_DELAY);
-  }
-
-  function resize() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = width;
-    canvas.height = height;
-    columns = Math.floor(width / CELL_SIZE);
-    rows = Math.floor(height / CELL_SIZE);
-  }
-
-  function resetGame() {
-    snakeColor = "green";
-    powerupActive = false;
-    powerupEndTime = 0;
-    gameOver = false;
-    score = 0;
-    direction = "Right";
-    snake = [
-      {x: Math.floor(columns/2), y: Math.floor(rows/2)},
-      {x: Math.floor(columns/2) - 1, y: Math.floor(rows/2)},
-      {x: Math.floor(columns/2) - 2, y: Math.floor(rows/2)}
-    ];
-    placeFood();
-    scoreDiv.textContent = "Score: " + score;
-    gameOverDiv.style.display = "none";
-  }
-
-  function placeFood() {
-    while (true) {
-      let x = Math.floor(Math.random() * columns);
-      let y = Math.floor(Math.random() * rows);
-      if (!snake.some(seg => seg.x === x && seg.y === y)) {
-        food = {x, y};
-        foodIsPowerup = Math.random() < 0.05;
-        break;
+      function init() {
+        canvas = document.getElementById("game");
+        ctx = canvas.getContext("2d");
+        resize();
+        resetGame();
+        window.addEventListener("resize", resize);
+        window.addEventListener("keydown", keyDownHandler);
+        canvas.addEventListener("click", () => {
+          if (gameOver) resetGame();
+        });
+        initTouchControls();
+        setInterval(update, UPDATE_DELAY);
       }
-    }
-  }
 
-  function keyDownHandler(e) {
-    if (gameOver && (e.key === "r" || e.key === "R")) {
-      resetGame();
-      return;
-    }
-    const opposites = {
-      "ArrowUp": "ArrowDown",
-      "ArrowDown": "ArrowUp",
-      "ArrowLeft": "ArrowRight",
-      "ArrowRight": "ArrowLeft"
-    };
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-      if (opposites[e.key] !== direction) {
-        direction = e.key;
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        columns = Math.floor(width / CELL_SIZE);
+        rows = Math.floor(height / CELL_SIZE);
       }
-    }
-  }
 
-  function update() {
-    if (gameOver) return;
+      function resetGame() {
+        snakeColor = "green";
+        powerupActive = false;
+        powerupEndTime = 0;
+        gameOver = false;
+        score = 0;
+        direction = "ArrowRight";
+        snake = [
+          { x: Math.floor(columns / 2), y: Math.floor(rows / 2) },
+          { x: Math.floor(columns / 2) - 1, y: Math.floor(rows / 2) },
+          { x: Math.floor(columns / 2) - 2, y: Math.floor(rows / 2) }
+        ];
+        placeFood();
+        scoreDiv.textContent = "Score: " + score;
+        gameOverDiv.style.display = "none";
+      }
 
-    if (powerupActive && Date.now() > powerupEndTime) {
-      powerupActive = false;
-      snakeColor = "green";
-    }
+      function placeFood() {
+        while (true) {
+          let x = Math.floor(Math.random() * columns);
+          let y = Math.floor(Math.random() * rows);
+          if (!snake.some(seg => seg.x === x && seg.y === y)) {
+            food = { x, y };
+            foodIsPowerup = Math.random() < 0.05;
+            break;
+          }
+        }
+      }
 
-    // Calculate new head position
-    let head = {...snake[0]};
-    switch(direction) {
-      case "ArrowRight": head.x += 1; break;
-      case "ArrowLeft": head.x -= 1; break;
-      case "ArrowUp": head.y -= 1; break;
-      case "ArrowDown": head.y += 1; break;
-    }
+      function keyDownHandler(e) {
+        if (gameOver && (e.key === "r" || e.key === "R")) {
+          resetGame();
+          return;
+        }
+        const opposites = {
+          ArrowUp: "ArrowDown",
+          ArrowDown: "ArrowUp",
+          ArrowLeft: "ArrowRight",
+          ArrowRight: "ArrowLeft"
+        };
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+          if (opposites[e.key] !== direction) {
+            direction = e.key;
+          }
+        }
+      }
 
-    // Check collisions with walls
-    if (head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows) {
-      endGame();
-      return;
-    }
-    // Check collisions with self
-    if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-      endGame();
-      return;
-    }
+      function update() {
+        if (gameOver) return;
 
-    snake.unshift(head);
+        if (powerupActive && Date.now() > powerupEndTime) {
+          powerupActive = false;
+          snakeColor = "green";
+        }
 
-    // Check food collision
-    if (head.x === food.x && head.y === food.y) {
-      score++;
-      if (foodIsPowerup) activatePowerup();
-      placeFood();
-      scoreDiv.textContent = "Score: " + score;
-    } else {
-      snake.pop();
-    }
+        let head = { ...snake[0] };
+        switch (direction) {
+          case "ArrowRight": head.x += 1; break;
+          case "ArrowLeft": head.x -= 1; break;
+          case "ArrowUp": head.y -= 1; break;
+          case "ArrowDown": head.y += 1; break;
+        }
 
-    draw();
-  }
+        if (head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows) {
+          endGame();
+          return;
+        }
+        if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+          endGame();
+          return;
+        }
 
-  function activatePowerup() {
-    powerupActive = true;
-    snakeColor = "orange";
-    powerupEndTime = Date.now() + POWERUP_DURATION;
-  }
+        snake.unshift(head);
 
-  function drawCell(x, y, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-    ctx.strokeStyle = "black";
-    ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-  }
+        if (head.x === food.x && head.y === food.y) {
+          score++;
+          if (foodIsPowerup) activatePowerup();
+          placeFood();
+          scoreDiv.textContent = "Score: " + score;
+        } else {
+          snake.pop();
+        }
 
-  function draw() {
-    ctx.clearRect(0, 0, width, height);
+        draw();
+      }
 
-    // Draw food
-    drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
+      function activatePowerup() {
+        powerupActive = true;
+        snakeColor = "orange";
+        powerupEndTime = Date.now() + POWERUP_DURATION;
+      }
 
-    // Draw snake
-    snake.forEach((seg, i) => {
-      const color = i === 0 ? "lime" : snakeColor;
-      drawCell(seg.x, seg.y, color);
-    });
-  }
+      function drawCell(x, y, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        ctx.strokeStyle = "black";
+        ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      }
 
-  function endGame() {
-    gameOver = true;
-    gameOverDiv.style.display = "block";
-  }
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+        drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
+        snake.forEach((seg, i) => {
+          const color = i === 0 ? "lime" : snakeColor;
+          drawCell(seg.x, seg.y, color);
+        });
+      }
 
-  init();
-})();
-</script>
+      function endGame() {
+        gameOver = true;
+        gameOverDiv.style.display = "block";
+      }
+
+      // Allow direction change from mobile buttons
+      window.setDirection = function (dir) {
+        const opposites = {
+          ArrowUp: "ArrowDown",
+          ArrowDown: "ArrowUp",
+          ArrowLeft: "ArrowRight",
+          ArrowRight: "ArrowLeft"
+        };
+        if (opposites[dir] !== direction) {
+          direction = dir;
+        }
+      };
+
+      // Touch swipe support
+      function initTouchControls() {
+        let startX, startY;
+        canvas.addEventListener("touchstart", e => {
+          const touch = e.touches[0];
+          startX = touch.clientX;
+          startY = touch.clientY;
+        });
+
+        canvas.addEventListener("touchend", e => {
+          const touch = e.changedTouches[0];
+          const dx = touch.clientX - startX;
+          const dy = touch.clientY - startY;
+          if (Math.abs(dx) > Math.abs(dy)) {
+            setDirection(dx > 0 ? "ArrowRight" : "ArrowLeft");
+          } else {
+            setDirection(dy > 0 ? "ArrowDown" : "ArrowUp");
+          }
+        });
+      }
+
+      init();
+    })();
+  </script>
 </body>
 </html>
