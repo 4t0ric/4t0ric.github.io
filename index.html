@@ -116,7 +116,7 @@
       let snakeColor = "green";
       let score = 0;
       let gameOver = false;
-      let showGrid = true; // ✅ Grid toggle flag
+      let showGrid = true; // Grid toggle flag
 
       const POWERUP_DURATION = 10000;
       const UPDATE_DELAY = 100;
@@ -269,7 +269,7 @@
       function draw() {
         ctx.clearRect(0, 0, width, height);
 
-        if (showGrid) drawGrid(); // ✅ Draw grid if enabled
+        if (showGrid) drawGrid(); // Draw grid if enabled
 
         drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
 
