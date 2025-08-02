@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Snake Game – Mobile Friendly</title>
+  <title>Snake Game – Grid Toggle</title>
   <style>
     body {
       margin: 0;
@@ -21,6 +21,25 @@
       font-size: 24px;
       z-index: 10;
       user-select: none;
+    }
+
+    #toggle-grid {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 2px solid white;
+      padding: 6px 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      user-select: none;
+    }
+
+    #toggle-grid:active {
+      background: white;
+      color: black;
     }
 
     #game-over {
@@ -69,6 +88,7 @@
 </head>
 <body>
   <div id="score">Score: 0</div>
+  <button id="toggle-grid" class="btn">Toggle Grid</button>
   <div id="game-over">
     Game Over!<br />
     Tap anywhere or press R to Restart
@@ -96,6 +116,8 @@
       let snakeColor = "green";
       let score = 0;
       let gameOver = false;
+      let showGrid = true; // ✅ Grid toggle flag
+
       const POWERUP_DURATION = 10000;
       const UPDATE_DELAY = 100;
 
@@ -114,6 +136,9 @@
         });
         initTouchControls();
         setInterval(update, UPDATE_DELAY);
+        document.getElementById("toggle-grid").addEventListener("click", () => {
+          showGrid = !showGrid;
+        });
       }
 
       function resize() {
@@ -224,9 +249,30 @@
         ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       }
 
+      function drawGrid() {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= columns; x++) {
+          ctx.beginPath();
+          ctx.moveTo(x * CELL_SIZE, 0);
+          ctx.lineTo(x * CELL_SIZE, height);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= rows; y++) {
+          ctx.beginPath();
+          ctx.moveTo(0, y * CELL_SIZE);
+          ctx.lineTo(width, y * CELL_SIZE);
+          ctx.stroke();
+        }
+      }
+
       function draw() {
         ctx.clearRect(0, 0, width, height);
+
+        if (showGrid) drawGrid(); // ✅ Draw grid if enabled
+
         drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
+
         snake.forEach((seg, i) => {
           const color = i === 0 ? "lime" : snakeColor;
           drawCell(seg.x, seg.y, color);
@@ -251,7 +297,6 @@
         }
       };
 
-      // Touch swipe support
       function initTouchControls() {
         let startX, startY;
         canvas.addEventListener("touchstart", e => {
@@ -259,7 +304,6 @@
           startX = touch.clientX;
           startY = touch.clientY;
         });
-
         canvas.addEventListener("touchend", e => {
           const touch = e.changedTouches[0];
           const dx = touch.clientX - startX;
