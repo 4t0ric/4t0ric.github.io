@@ -391,6 +391,7 @@
       let touchStartX = null;
       let touchStartY = null;
       canvas.addEventListener("touchstart", e => {
+        e.preventDefault();
         if (gameOver) {
           resetGame();
           return;
@@ -400,6 +401,7 @@
         touchStartY = touch.clientY;
       });
       canvas.addEventListener("touchmove", e => {
+        e.preventDefault();
         if (!touchStartX || !touchStartY) return;
         const touch = e.touches[0];
         const dx = touch.clientX - touchStartX;
