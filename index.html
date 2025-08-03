@@ -287,10 +287,8 @@
 
         if (showGrid) drawGrid();
 
-        // Draw food
         drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
 
-        // Draw snake
         snake.forEach((seg, i) => {
           drawCell(seg.x, seg.y, i === 0 ? "lime" : snakeColor);
         });
@@ -319,7 +317,6 @@
           snakeColor = darkTheme ? "green" : "#007700";
         }
 
-        // Apply nextDirection if not opposite of current direction
         const opposites = {
           Up: "Down",
           Down: "Up",
@@ -363,7 +360,6 @@
         requestAnimationFrame(update);
       }
 
-      // Handle keyboard controls
       window.addEventListener("keydown", e => {
         if (gameOver && (e.key === "r" || e.key === "R")) {
           resetGame();
@@ -381,7 +377,6 @@
         };
         let dir = keyDirMap[e.key];
         if (!dir) return;
-        // Ignore opposite direction
         const opposites = {
           Up: "Down",
           Down: "Up",
@@ -393,7 +388,6 @@
         }
       });
 
-      // Handle swipe controls for mobile
       let touchStartX = null;
       let touchStartY = null;
       canvas.addEventListener("touchstart", e => {
@@ -421,12 +415,10 @@
         touchStartY = null;
       });
 
-      // Tap to restart on mobile (also desktop)
       gameOverDiv.addEventListener("click", () => {
         if (gameOver) resetGame();
       });
 
-      // Settings modal toggle
       settingsBtn.addEventListener("click", () => {
         settingsModal.classList.toggle("show");
       });
@@ -434,7 +426,6 @@
         settingsModal.classList.remove("show");
       });
 
-      // Difficulty buttons
       difficultyButtons.forEach(btn => {
         btn.addEventListener("click", () => {
           updateDelay = parseInt(btn.dataset.speed, 10);
@@ -442,7 +433,6 @@
         });
       });
 
-      // Theme toggle
       themeToggleBtn.addEventListener("click", () => {
         darkTheme = !darkTheme;
         if (darkTheme) {
@@ -458,13 +448,11 @@
         draw();
       });
 
-      // Grid toggle
       gridToggleBtn.addEventListener("click", () => {
         showGrid = !showGrid;
         draw();
       });
 
-      // Setup initial canvas size and start game
       function init() {
         resize();
         resetGame();
