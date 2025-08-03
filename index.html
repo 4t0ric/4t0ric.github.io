@@ -5,305 +5,349 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Snake Game</title>
   <style>
-    body {
+    html, body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      padding: 0;
       background: black;
       color: white;
+      font-family: Arial, sans-serif;
       overflow: hidden;
+      touch-action: none;
     }
     #score {
       position: fixed;
       top: 10px;
       left: 10px;
-      font-size: 20px;
+      font-size: 24px;
       z-index: 10;
-    }
-    #game-over {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 32px;
-      color: red;
-      z-index: 20;
-      text-align: center;
+      user-select: none;
     }
     #settings-button {
       position: fixed;
       top: 10px;
       right: 10px;
-      z-index: 10;
-      font-size: 16px;
-      padding: 5px 10px;
-      background: gray;
-      color: white;
+      font-size: 18px;
+      padding: 6px 12px;
+      background: white;
+      color: black;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
+      z-index: 10;
+    }
+    #game-over {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: red;
+      font-size: 36px;
+      text-align: center;
+      display: none;
+      user-select: none;
+      z-index: 20;
+    }
+    canvas {
+      display: block;
     }
     .btn {
-      padding: 8px 12px;
       font-size: 16px;
-      background: #444;
-      color: white;
+      padding: 6px 12px;
+      margin: 4px;
+      background: white;
+      color: black;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
-      margin: 5px 0;
     }
-    #game {
-      display: block;
+    #settings-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.9);
+      border: 2px solid white;
+      padding: 20px;
+      z-index: 30;
+      border-radius: 15px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div id="score">Score: 0</div>
-  <button id="settings-button">Settings</button>
-  <div id="game-over">Game Over!<br>Press R to Restart</div>
-  <canvas id="game"></canvas>
 
-  <!-- Settings Modal -->
-  <div id="settings-modal" style="
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.9);
-    border: 2px solid white;
-    padding: 20px;
-    z-index: 30;
-    border-radius: 15px;
-    text-align: center;
-    color: white;
-  ">
-    <h2>Settings</h2>
-    <button class="btn" id="toggle-grid-setting">Toggle Grid</button><br><br>
+<div id="score">Score: 0</div>
+<button id="settings-button">⚙️</button>
 
-    <label for="difficulty" style="display:block;margin:10px 0;">Difficulty:</label>
-    <select id="difficulty" class="btn">
-      <option value="150">Easy</option>
-      <option value="100" selected>Normal</option>
-      <option value="60">Hard</option>
-    </select><br><br>
+<div id="game-over">
+  Game Over!<br />
+  Press R or tap to restart
+</div>
 
-    <button class="btn" id="theme-toggle">Toggle Theme</button><br><br>
-    <button class="btn" id="restart-game">Restart Game</button><br><br>
-    <button class="btn" id="close-settings">Close</button>
-  </div>
+<canvas id="game"></canvas>
 
-  <script>
-    (() => {
-      const CELL_SIZE = 20;
-      let canvas, ctx;
-      let width, height, columns, rows;
-      let snake, direction, food, foodIsPowerup;
-      let powerupActive = false;
-      let powerupEndTime = 0;
-      let snakeColor = "green";
-      let score = 0;
-      let gameOver = false;
-      let showGrid = false;
-      let darkTheme = true;
+<div id="settings-modal">
+  <h2>Settings</h2>
+  <button class="btn" id="toggle-grid-setting">Toggle Grid</button><br><br>
 
-      let UPDATE_DELAY = 100;
-      let gameInterval;
+  <label for="difficulty" style="display:block;margin:10px 0;">Difficulty:</label>
+  <select id="difficulty" class="btn">
+    <option value="150">Easy</option>
+    <option value="100" selected>Normal</option>
+    <option value="60">Hard</option>
+  </select><br><br>
 
-      const POWERUP_DURATION = 10000;
-      const scoreDiv = document.getElementById("score");
-      const gameOverDiv = document.getElementById("game-over");
+  <button class="btn" id="theme-toggle">Toggle Theme</button><br><br>
+  <button class="btn" id="restart-game">Restart Game</button><br><br>
+  <button class="btn" id="close-settings">Close</button>
+</div>
 
-      function init() {
-        canvas = document.getElementById("game");
-        ctx = canvas.getContext("2d");
-        resize();
+<script>
+(() => {
+  const CELL_SIZE = 20;
+  let canvas, ctx;
+  let width, height, columns, rows;
+
+  let snake, direction, food, foodIsPowerup;
+  let powerupActive = false;
+  let powerupEndTime = 0;
+  let snakeColor = "green";
+  let score = 0;
+  let gameOver = false;
+  let showGrid = false;
+  let darkTheme = true;
+
+  let UPDATE_DELAY = 100;
+  let gameInterval;
+  const POWERUP_DURATION = 10000;
+
+  const scoreDiv = document.getElementById("score");
+  const gameOverDiv = document.getElementById("game-over");
+
+  function init() {
+    canvas = document.getElementById("game");
+    ctx = canvas.getContext("2d");
+    resize();
+    resetGame();
+    window.addEventListener("resize", resize);
+    window.addEventListener("keydown", keyDownHandler);
+    canvas.addEventListener("click", () => gameOver && resetGame());
+    setupSettings();
+    setupTouch();
+    startGameLoop();
+  }
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    columns = Math.floor(width / CELL_SIZE);
+    rows = Math.floor(height / CELL_SIZE);
+  }
+
+  function resetGame() {
+    snakeColor = darkTheme ? "green" : "#007700";
+    powerupActive = false;
+    powerupEndTime = 0;
+    gameOver = false;
+    score = 0;
+    direction = "ArrowRight";
+    snake = [
+      {x: Math.floor(columns/2), y: Math.floor(rows/2)},
+      {x: Math.floor(columns/2)-1, y: Math.floor(rows/2)},
+      {x: Math.floor(columns/2)-2, y: Math.floor(rows/2)}
+    ];
+    placeFood();
+    scoreDiv.textContent = "Score: " + score;
+    gameOverDiv.style.display = "none";
+    draw();
+  }
+
+  function placeFood() {
+    while (true) {
+      let x = Math.floor(Math.random() * columns);
+      let y = Math.floor(Math.random() * rows);
+      if (!snake.some(seg => seg.x === x && seg.y === y)) {
+        food = {x, y};
+        foodIsPowerup = Math.random() < 0.05;
+        break;
+      }
+    }
+  }
+
+  function keyDownHandler(e) {
+    if (gameOver && (e.key === "r" || e.key === "R")) {
+      resetGame();
+      return;
+    }
+    const opposite = {
+      ArrowUp: "ArrowDown",
+      ArrowDown: "ArrowUp",
+      ArrowLeft: "ArrowRight",
+      ArrowRight: "ArrowLeft"
+    };
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+      if (opposite[e.key] !== direction) {
+        direction = e.key;
+      }
+    }
+  }
+
+  function update() {
+    if (gameOver) return;
+
+    if (powerupActive && Date.now() > powerupEndTime) {
+      powerupActive = false;
+      snakeColor = darkTheme ? "green" : "#007700";
+    }
+
+    let head = {...snake[0]};
+    switch(direction) {
+      case "ArrowRight": head.x += 1; break;
+      case "ArrowLeft": head.x -= 1; break;
+      case "ArrowUp": head.y -= 1; break;
+      case "ArrowDown": head.y += 1; break;
+    }
+
+    if (head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+      endGame();
+      return;
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      if (foodIsPowerup) activatePowerup();
+      placeFood();
+      scoreDiv.textContent = "Score: " + score;
+    } else {
+      snake.pop();
+    }
+
+    draw();
+  }
+
+  function activatePowerup() {
+    powerupActive = true;
+    snakeColor = "orange";
+    powerupEndTime = Date.now() + POWERUP_DURATION;
+  }
+
+  function drawCell(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    ctx.strokeStyle = darkTheme ? "black" : "#ccc";
+    ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+  }
+
+  function drawGrid() {
+    ctx.strokeStyle = darkTheme ? "#333" : "#999";
+    for (let x = 0; x < columns; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * CELL_SIZE, 0);
+      ctx.lineTo(x * CELL_SIZE, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < rows; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * CELL_SIZE);
+      ctx.lineTo(width, y * CELL_SIZE);
+      ctx.stroke();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    if (showGrid) drawGrid();
+
+    drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
+
+    snake.forEach((seg, i) => {
+      drawCell(seg.x, seg.y, i === 0 ? "lime" : snakeColor);
+    });
+  }
+
+  function endGame() {
+    gameOver = true;
+    gameOverDiv.style.display = "block";
+  }
+
+  function startGameLoop() {
+    if (gameInterval) clearInterval(gameInterval);
+    gameInterval = setInterval(update, UPDATE_DELAY);
+  }
+
+  function setupSettings() {
+    const modal = document.getElementById("settings-modal");
+
+    document.getElementById("settings-button").onclick = () => {
+      modal.style.display = "block";
+    };
+
+    document.getElementById("close-settings").onclick = () => {
+      modal.style.display = "none";
+    };
+
+    document.getElementById("toggle-grid-setting").onclick = () => {
+      showGrid = !showGrid;
+      draw();
+    };
+
+    document.getElementById("restart-game").onclick = () => {
+      resetGame();
+      modal.style.display = "none";
+    };
+
+    document.getElementById("difficulty").onchange = (e) => {
+      UPDATE_DELAY = parseInt(e.target.value);
+      startGameLoop();
+    };
+
+    document.getElementById("theme-toggle").onclick = () => {
+      darkTheme = !darkTheme;
+      document.body.style.background = darkTheme ? "black" : "#f4f4f4";
+      document.body.style.color = darkTheme ? "white" : "black";
+      snakeColor = darkTheme ? "green" : "#007700";
+      draw();
+    };
+  }
+
+  function setupTouch() {
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener("touchstart", e => {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    });
+
+    canvas.addEventListener("touchend", e => {
+      if (gameOver) {
         resetGame();
-        window.addEventListener("resize", resize);
-        window.addEventListener("keydown", keyDownHandler);
-        setupSettings();
-        startGameLoop();
+        return;
       }
 
-      function resize() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-        columns = Math.floor(width / CELL_SIZE);
-        rows = Math.floor(height / CELL_SIZE);
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30 && direction !== "ArrowLeft") direction = "ArrowRight";
+        else if (dx < -30 && direction !== "ArrowRight") direction = "ArrowLeft";
+      } else {
+        if (dy > 30 && direction !== "ArrowUp") direction = "ArrowDown";
+        else if (dy < -30 && direction !== "ArrowDown") direction = "ArrowUp";
       }
+    });
+  }
 
-      function resetGame() {
-        snakeColor = darkTheme ? "green" : "#007700";
-        powerupActive = false;
-        powerupEndTime = 0;
-        gameOver = false;
-        score = 0;
-        direction = "ArrowRight";
-        snake = [
-          {x: Math.floor(columns/2), y: Math.floor(rows/2)},
-          {x: Math.floor(columns/2) - 1, y: Math.floor(rows/2)},
-          {x: Math.floor(columns/2) - 2, y: Math.floor(rows/2)}
-        ];
-        placeFood();
-        scoreDiv.textContent = "Score: " + score;
-        gameOverDiv.style.display = "none";
-      }
-
-      function placeFood() {
-        while (true) {
-          let x = Math.floor(Math.random() * columns);
-          let y = Math.floor(Math.random() * rows);
-          if (!snake.some(seg => seg.x === x && seg.y === y)) {
-            food = {x, y};
-            foodIsPowerup = Math.random() < 0.05;
-            break;
-          }
-        }
-      }
-
-      function keyDownHandler(e) {
-        if (gameOver && (e.key === "r" || e.key === "R")) {
-          resetGame();
-          return;
-        }
-        const opposites = {
-          "ArrowUp": "ArrowDown",
-          "ArrowDown": "ArrowUp",
-          "ArrowLeft": "ArrowRight",
-          "ArrowRight": "ArrowLeft"
-        };
-        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-          if (opposites[e.key] !== direction) {
-            direction = e.key;
-          }
-        }
-      }
-
-      function update() {
-        if (gameOver) return;
-
-        if (powerupActive && Date.now() > powerupEndTime) {
-          powerupActive = false;
-          snakeColor = darkTheme ? "green" : "#007700";
-        }
-
-        let head = {...snake[0]};
-        switch(direction) {
-          case "ArrowRight": head.x += 1; break;
-          case "ArrowLeft": head.x -= 1; break;
-          case "ArrowUp": head.y -= 1; break;
-          case "ArrowDown": head.y += 1; break;
-        }
-
-        if (head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows ||
-            snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-          endGame();
-          return;
-        }
-
-        snake.unshift(head);
-
-        if (head.x === food.x && head.y === food.y) {
-          score++;
-          if (foodIsPowerup) activatePowerup();
-          placeFood();
-          scoreDiv.textContent = "Score: " + score;
-        } else {
-          snake.pop();
-        }
-
-        draw();
-      }
-
-      function activatePowerup() {
-        powerupActive = true;
-        snakeColor = "orange";
-        powerupEndTime = Date.now() + POWERUP_DURATION;
-      }
-
-      function drawCell(x, y, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        ctx.strokeStyle = "black";
-        ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
-
-      function drawGrid() {
-        ctx.strokeStyle = darkTheme ? "#333" : "#ccc";
-        for (let x = 0; x <= columns; x++) {
-          ctx.beginPath();
-          ctx.moveTo(x * CELL_SIZE, 0);
-          ctx.lineTo(x * CELL_SIZE, height);
-          ctx.stroke();
-        }
-        for (let y = 0; y <= rows; y++) {
-          ctx.beginPath();
-          ctx.moveTo(0, y * CELL_SIZE);
-          ctx.lineTo(width, y * CELL_SIZE);
-          ctx.stroke();
-        }
-      }
-
-      function draw() {
-        ctx.clearRect(0, 0, width, height);
-
-        if (showGrid) drawGrid();
-
-        drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
-
-        snake.forEach((seg, i) => {
-          const color = i === 0 ? "lime" : snakeColor;
-          drawCell(seg.x, seg.y, color);
-        });
-      }
-
-      function endGame() {
-        gameOver = true;
-        gameOverDiv.style.display = "block";
-      }
-
-      function startGameLoop() {
-        if (gameInterval) clearInterval(gameInterval);
-        gameInterval = setInterval(update, UPDATE_DELAY);
-      }
-
-      function setupSettings() {
-        document.getElementById("settings-button").addEventListener("click", () => {
-          document.getElementById("settings-modal").style.display = "block";
-        });
-
-        document.getElementById("close-settings").addEventListener("click", () => {
-          document.getElementById("settings-modal").style.display = "none";
-        });
-
-        document.getElementById("toggle-grid-setting").addEventListener("click", () => {
-          showGrid = !showGrid;
-        });
-
-        document.getElementById("restart-game").addEventListener("click", () => {
-          resetGame();
-          document.getElementById("settings-modal").style.display = "none";
-        });
-
-        document.getElementById("difficulty").addEventListener("change", e => {
-          UPDATE_DELAY = parseInt(e.target.value);
-          startGameLoop();
-        });
-
-        document.getElementById("theme-toggle").addEventListener("click", () => {
-          darkTheme = !darkTheme;
-          document.body.style.background = darkTheme ? "black" : "#f4f4f4";
-          document.body.style.color = darkTheme ? "white" : "black";
-          snakeColor = darkTheme ? "green" : "#007700";
-          draw();
-        });
-      }
-
-      init();
-    })();
-  </script>
+  init();
+})();
+</script>
 </body>
 </html>
