@@ -388,8 +388,12 @@
         }
       });
 
+      // --- NEW TOUCH / SWIPE HANDLER ---
+
       let touchStartX = null;
       let touchStartY = null;
+      const SWIPE_THRESHOLD = 40;
+
       canvas.addEventListener("touchstart", e => {
         e.preventDefault();
         if (gameOver) {
@@ -399,23 +403,27 @@
         const touch = e.touches[0];
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
-      });
+      }, {passive: false});
+
       canvas.addEventListener("touchmove", e => {
         e.preventDefault();
-        if (!touchStartX || !touchStartY) return;
+        if (touchStartX === null || touchStartY === null) return;
+
         const touch = e.touches[0];
-        const dx = touch.clientX - touchStartX;
-        const dy = touch.clientY - touchStartY;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx > 30 && direction !== "Left") nextDirection = "Right";
-          else if (dx < -30 && direction !== "Right") nextDirection = "Left";
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          if (deltaX > SWIPE_THRESHOLD && direction !== "Left") nextDirection = "Right";
+          else if (deltaX < -SWIPE_THRESHOLD && direction !== "Right") nextDirection = "Left";
         } else {
-          if (dy > 30 && direction !== "Up") nextDirection = "Down";
-          else if (dy < -30 && direction !== "Down") nextDirection = "Up";
+          if (deltaY > SWIPE_THRESHOLD && direction !== "Up") nextDirection = "Down";
+          else if (deltaY < -SWIPE_THRESHOLD && direction !== "Down") nextDirection = "Up";
         }
+
         touchStartX = null;
         touchStartY = null;
-      });
+      }, {passive: false});
 
       gameOverDiv.addEventListener("click", () => {
         if (gameOver) resetGame();
