@@ -1,352 +1,368 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Snake Game</title>
-  <style>
-    :root {
-      --bg-dark: black;
-      --bg-light: #f4f4f4;
-      --text-dark: white;
-      --text-light: black;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Snake Game</title>
+<style>
+  :root {
+    --bg-dark: black;
+    --bg-light: #f4f4f4;
+    --text-dark: white;
+    --text-light: black;
+    --btn-dark: white;
+    --btn-light: #222;
+  }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg-dark);
-      color: var(--text-dark);
-      overflow: hidden;
-      transition: background-color 0.4s, color 0.4s;
-    }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    transition: background-color 0.3s, color 0.3s;
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+    overflow: hidden;
+  }
 
-    #score {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 20px;
-      z-index: 10;
-    }
+  #score {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 24px;
+    z-index: 10;
+    user-select: none;
+  }
 
-    #game-over {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: red;
-      font-size: 32px;
-      text-align: center;
-      display: none;
-      z-index: 11;
-    }
+  #game-over {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: red;
+    font-size: 36px;
+    text-align: center;
+    display: none;
+    user-select: none;
+    z-index: 100;
+    cursor: pointer;
+  }
 
-    canvas {
-      display: block;
-    }
+  #settings-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 11;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border: none;
+    background: gray;
+    color: white;
+    border-radius: 6px;
+  }
 
-    #settings-btn {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      z-index: 10;
-      padding: 8px 16px;
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      color: inherit;
-      cursor: pointer;
-      border-radius: 8px;
-      transition: background-color 0.3s;
-    }
+  #settings-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    display: none;
+    z-index: 1000;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
 
-    #settings-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
+  #settings-modal.show {
+    display: block;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
 
-    #settings-modal {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.95);
-      background: rgba(0, 0, 0, 0.95);
-      color: white;
-      padding: 20px;
-      border-radius: 12px;
-      z-index: 20;
-      display: none;
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
+  .setting-group {
+    margin-bottom: 20px;
+  }
 
-    #settings-modal.show {
-      display: block;
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-    }
+  .setting-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
 
-    .modal-option {
-      margin-bottom: 12px;
-    }
+  .btn {
+    padding: 8px 16px;
+    margin: 4px;
+    border: none;
+    border-radius: 6px;
+    background: white;
+    color: black;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s, color 0.3s;
+  }
 
-    select, button {
-      padding: 6px 12px;
-      margin-left: 10px;
-      font-size: 14px;
-    }
-
-    .btn {
-      border: none;
-      border-radius: 6px;
-      background-color: #333;
-      color: white;
-      cursor: pointer;
-      transition: background-color 0.3s, color 0.3s;
-    }
-
-    .btn:hover {
-      background-color: #555;
-    }
-
-    .light-theme {
-      background: var(--bg-light);
-      color: var(--text-light);
-    }
-
-    .light-theme #settings-modal {
-      background: white;
-      color: black;
-    }
-
-    .light-theme .btn {
-      background: #ccc;
-      color: black;
-    }
-
-    .light-theme .btn:hover {
-      background: #aaa;
-    }
-  </style>
+  canvas {
+    display: block;
+  }
+</style>
 </head>
 <body>
-  <div id="score">Score: 0</div>
-  <div id="game-over">Game Over!<br />Press R to Restart</div>
-  <button id="settings-btn" class="btn">⚙️</button>
-  <div id="settings-modal">
-    <div class="modal-option">
-      Difficulty:
-      <select id="difficulty">
-        <option value="150">Easy</option>
-        <option value="100" selected>Medium</option>
-        <option value="60">Hard</option>
-      </select>
-    </div>
-    <div class="modal-option">
-      Theme:
-      <button id="theme-toggle" class="btn">Toggle Dark/Light</button>
-    </div>
-    <div class="modal-option">
-      Show Grid:
-      <button id="grid-toggle" class="btn">Toggle Grid</button>
-    </div>
-    <button id="close-settings" class="btn">Close</button>
+<div id="score">Score: 0</div>
+<div id="game-over">Game Over!<br />Tap or Press R to Restart</div>
+<button id="settings-button">⚙️</button>
+
+<div id="settings-modal">
+  <div class="setting-group">
+    <label for="difficulty">Difficulty</label>
+    <button class="btn" id="easy">Easy</button>
+    <button class="btn" id="medium">Medium</button>
+    <button class="btn" id="hard">Hard</button>
   </div>
-  <canvas id="game"></canvas>
+  <div class="setting-group">
+    <label for="theme-toggle">Theme</label>
+    <button class="btn" id="theme-toggle">Toggle Theme</button>
+  </div>
+  <div class="setting-group">
+    <label for="grid-toggle">Grid</label>
+    <button class="btn" id="grid-toggle">Toggle Grid</button>
+  </div>
+  <div class="setting-group">
+    <button class="btn" onclick="document.getElementById('settings-modal').classList.remove('show')">Close</button>
+  </div>
+</div>
 
-  <script>
-    (() => {
-      const CELL_SIZE = 20;
-      let canvas, ctx;
-      let width, height, columns, rows;
-      let snake, direction, food, foodIsPowerup;
-      let score = 0, gameOver = false;
-      let powerupActive = false, powerupEndTime = 0;
-      let snakeColor = "green";
-      let darkTheme = true;
-      let showGrid = false;
-      let updateDelay = 100;
-      let lastUpdateTime = 0;
+<canvas id="game"></canvas>
 
-      const scoreDiv = document.getElementById("score");
-      const gameOverDiv = document.getElementById("game-over");
-      const modal = document.getElementById("settings-modal");
-      const canvasEl = document.getElementById("game");
+<script>
+(() => {
+  const CELL_SIZE = 20;
+  const POWERUP_DURATION = 10000;
+  const DEFAULT_SPEED = { Easy: 150, Medium: 100, Hard: 70 };
+  let currentSpeed = DEFAULT_SPEED.Medium;
 
-      function resize() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-        columns = Math.floor(width / CELL_SIZE);
-        rows = Math.floor(height / CELL_SIZE);
+  let canvas, ctx;
+  let width, height, columns, rows;
+  let snake, direction, food, foodIsPowerup;
+  let powerupActive = false;
+  let powerupEndTime = 0;
+  let snakeColor = "green";
+  let score = 0;
+  let gameOver = false;
+  let darkTheme = true;
+  let showGrid = false;
+  let lastTouch = null;
+
+  const scoreDiv = document.getElementById("score");
+  const gameOverDiv = document.getElementById("game-over");
+  const settingsModal = document.getElementById("settings-modal");
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    columns = Math.floor(width / CELL_SIZE);
+    rows = Math.floor(height / CELL_SIZE);
+  }
+
+  function resetGame() {
+    snakeColor = darkTheme ? "green" : "#007700";
+    powerupActive = false;
+    powerupEndTime = 0;
+    gameOver = false;
+    score = 0;
+    direction = "Right";
+    snake = [
+      { x: Math.floor(columns / 2), y: Math.floor(rows / 2) },
+      { x: Math.floor(columns / 2) - 1, y: Math.floor(rows / 2) },
+      { x: Math.floor(columns / 2) - 2, y: Math.floor(rows / 2) }
+    ];
+    placeFood();
+    scoreDiv.textContent = "Score: " + score;
+    gameOverDiv.style.display = "none";
+  }
+
+  function placeFood() {
+    while (true) {
+      let x = Math.floor(Math.random() * columns);
+      let y = Math.floor(Math.random() * rows);
+      if (!snake.some(seg => seg.x === x && seg.y === y)) {
+        food = { x, y };
+        foodIsPowerup = Math.random() < 0.05;
+        break;
       }
+    }
+  }
 
-      function resetGame() {
-        snakeColor = darkTheme ? "green" : "#007700";
-        powerupActive = false;
-        powerupEndTime = 0;
-        gameOver = false;
-        score = 0;
-        direction = "ArrowRight";
-        snake = [
-          {x: 10, y: 10},
-          {x: 9, y: 10},
-          {x: 8, y: 10}
-        ];
-        placeFood();
-        scoreDiv.textContent = "Score: " + score;
-        gameOverDiv.style.display = "none";
-      }
+  function activatePowerup() {
+    powerupActive = true;
+    snakeColor = "orange";
+    powerupEndTime = Date.now() + POWERUP_DURATION;
+  }
 
-      function placeFood() {
-        while (true) {
-          let x = Math.floor(Math.random() * columns);
-          let y = Math.floor(Math.random() * rows);
-          if (!snake.some(seg => seg.x === x && seg.y === y)) {
-            food = {x, y};
-            foodIsPowerup = Math.random() < 0.05;
-            break;
-          }
-        }
-      }
+  function drawCell(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    ctx.strokeStyle = "black";
+    ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+  }
 
-      function drawCell(x, y, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        ctx.strokeStyle = darkTheme ? "#222" : "#aaa";
-        ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
+  function drawGrid() {
+    ctx.strokeStyle = darkTheme ? "#333" : "#ccc";
+    for (let x = 0; x < width; x += CELL_SIZE) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < height; y += CELL_SIZE) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+  }
 
-      function drawGrid() {
-        ctx.strokeStyle = darkTheme ? "#222" : "#aaa";
-        for (let x = 0; x < columns; x++) {
-          for (let y = 0; y < rows; y++) {
-            ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-          }
-        }
-      }
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
 
-      function draw() {
-        ctx.clearRect(0, 0, width, height);
-        if (showGrid) drawGrid();
-        drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
-        snake.forEach((seg, i) => {
-          drawCell(seg.x, seg.y, i === 0 ? "lime" : snakeColor);
-        });
-      }
+    if (showGrid) drawGrid();
 
-      function updateSnake() {
-        if (powerupActive && Date.now() > powerupEndTime) {
-          powerupActive = false;
-          snakeColor = darkTheme ? "green" : "#007700";
-        }
+    drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
 
-        let head = {...snake[0]};
-        switch(direction) {
-          case "ArrowRight": head.x += 1; break;
-          case "ArrowLeft": head.x -= 1; break;
-          case "ArrowUp": head.y -= 1; break;
-          case "ArrowDown": head.y += 1; break;
-        }
+    snake.forEach((seg, i) => {
+      drawCell(seg.x, seg.y, i === 0 ? "lime" : snakeColor);
+    });
+  }
 
-        if (head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows || snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-          gameOver = true;
-          gameOverDiv.style.display = "block";
-          return;
-        }
+  function update() {
+    if (gameOver) return;
 
-        snake.unshift(head);
-        if (head.x === food.x && head.y === food.y) {
-          score++;
-          scoreDiv.textContent = "Score: " + score;
-          if (foodIsPowerup) {
-            powerupActive = true;
-            snakeColor = "orange";
-            powerupEndTime = Date.now() + 10000;
-          }
-          placeFood();
-        } else {
-          snake.pop();
-        }
-        draw();
-      }
+    if (powerupActive && Date.now() > powerupEndTime) {
+      powerupActive = false;
+      snakeColor = darkTheme ? "green" : "#007700";
+    }
 
-      function gameLoop(timestamp) {
-        if (!lastUpdateTime || timestamp - lastUpdateTime > updateDelay) {
-          if (!gameOver) updateSnake();
-          lastUpdateTime = timestamp;
-        }
-        requestAnimationFrame(gameLoop);
-      }
+    let head = { ...snake[0] };
+    switch (direction) {
+      case "Right": head.x += 1; break;
+      case "Left": head.x -= 1; break;
+      case "Up": head.y -= 1; break;
+      case "Down": head.y += 1; break;
+    }
 
-      function initControls() {
-        window.addEventListener("keydown", (e) => {
-          const keys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
-          const opposites = {
-            "ArrowUp": "ArrowDown",
-            "ArrowDown": "ArrowUp",
-            "ArrowLeft": "ArrowRight",
-            "ArrowRight": "ArrowLeft"
-          };
-          if (gameOver && (e.key === "r" || e.key === "R")) {
-            resetGame();
-          } else if (keys.includes(e.key) && direction !== opposites[e.key]) {
-            direction = e.key;
-          }
-        });
+    if (head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+      endGame();
+      return;
+    }
 
-        // Swipe gestures
-        let touchStartX, touchStartY;
-        canvas.addEventListener("touchstart", e => {
-          const touch = e.touches[0];
-          touchStartX = touch.clientX;
-          touchStartY = touch.clientY;
-        });
+    snake.unshift(head);
 
-        canvas.addEventListener("touchend", e => {
-          const dx = e.changedTouches[0].clientX - touchStartX;
-          const dy = e.changedTouches[0].clientY - touchStartY;
-          if (Math.abs(dx) > Math.abs(dy)) {
-            direction = dx > 0 ? "ArrowRight" : "ArrowLeft";
-          } else {
-            direction = dy > 0 ? "ArrowDown" : "ArrowUp";
-          }
-        });
-      }
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      if (foodIsPowerup) activatePowerup();
+      placeFood();
+      scoreDiv.textContent = "Score: " + score;
+    } else {
+      snake.pop();
+    }
 
-      function initSettings() {
-        document.getElementById("settings-btn").onclick = () => {
-          modal.classList.add("show");
-        };
-        document.getElementById("close-settings").onclick = () => {
-          modal.classList.remove("show");
-        };
+    draw();
+  }
 
-        document.getElementById("difficulty").onchange = (e) => {
-          updateDelay = parseInt(e.target.value);
-        };
+  function endGame() {
+    gameOver = true;
+    gameOverDiv.style.display = "block";
+  }
 
-        document.getElementById("theme-toggle").onclick = () => {
-          darkTheme = !darkTheme;
-          document.body.classList.toggle("light-theme", !darkTheme);
-          snakeColor = darkTheme ? "green" : "#007700";
-          draw();
-        };
+  function loop() {
+    update();
+    setTimeout(loop, currentSpeed);
+  }
 
-        document.getElementById("grid-toggle").onclick = () => {
-          showGrid = !showGrid;
-          draw();
-        };
-      }
-
-      canvas = canvasEl;
-      ctx = canvas.getContext("2d");
-      resize();
+  function keyDownHandler(e) {
+    if (gameOver && (e.key === "r" || e.key === "R")) {
       resetGame();
-      initControls();
-      initSettings();
-      window.addEventListener("resize", resize);
-      requestAnimationFrame(gameLoop);
-    })();
-  </script>
+      return;
+    }
+    const keys = {
+      ArrowUp: "Up", ArrowDown: "Down", ArrowLeft: "Left", ArrowRight: "Right",
+      w: "Up", s: "Down", a: "Left", d: "Right"
+    };
+    const opposites = { Up: "Down", Down: "Up", Left: "Right", Right: "Left" };
+    const newDir = keys[e.key];
+    if (newDir && opposites[newDir] !== direction) direction = newDir;
+  }
+
+  function setTheme(dark) {
+    darkTheme = dark;
+    document.body.style.backgroundColor = dark ? "black" : "#f4f4f4";
+    document.body.style.color = dark ? "white" : "black";
+    settingsModal.style.background = dark ? "rgba(0,0,0,0.9)" : "#ffffff";
+    settingsModal.style.color = dark ? "white" : "black";
+    document.querySelectorAll(".btn").forEach(btn => {
+      btn.style.background = dark ? "white" : "#222";
+      btn.style.color = dark ? "black" : "white";
+    });
+    draw();
+  }
+
+  // Touch controls for mobile
+  canvas.addEventListener("touchstart", e => {
+    if (gameOver) {
+      resetGame();
+    } else {
+      lastTouch = e.touches[0];
+    }
+  });
+
+  canvas.addEventListener("touchmove", e => {
+    if (!lastTouch) return;
+    const dx = e.touches[0].clientX - lastTouch.clientX;
+    const dy = e.touches[0].clientY - lastTouch.clientY;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 10 && direction !== "Left") direction = "Right";
+      else if (dx < -10 && direction !== "Right") direction = "Left";
+    } else {
+      if (dy > 10 && direction !== "Up") direction = "Down";
+      else if (dy < -10 && direction !== "Down") direction = "Up";
+    }
+    lastTouch = null;
+  });
+
+  window.addEventListener("keydown", keyDownHandler);
+  window.addEventListener("resize", () => {
+    resize();
+    draw();
+  });
+
+  document.getElementById("settings-button").onclick = () => {
+    settingsModal.classList.toggle("show");
+  };
+
+  document.getElementById("theme-toggle").onclick = () => {
+    setTheme(!darkTheme);
+  };
+
+  document.getElementById("grid-toggle").onclick = () => {
+    showGrid = !showGrid;
+    draw();
+  };
+
+  document.getElementById("easy").onclick = () => { currentSpeed = DEFAULT_SPEED.Easy; };
+  document.getElementById("medium").onclick = () => { currentSpeed = DEFAULT_SPEED.Medium; };
+  document.getElementById("hard").onclick = () => { currentSpeed = DEFAULT_SPEED.Hard; };
+
+  canvas = document.getElementById("game");
+  ctx = canvas.getContext("2d");
+  resize();
+  resetGame();
+  setTheme(true);
+  loop();
+})();
+</script>
 </body>
 </html>
