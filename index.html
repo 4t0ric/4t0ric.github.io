@@ -182,6 +182,11 @@
       <button id="copy-code">Copy Code</button>
       <button id="load-code">Load from Code</button>
     </div>
+    <!-- Achievements Section -->
+    <div class="setting-group">
+      <label>Achievements</label>
+      <div id="achievements-list" style="max-height:120px; overflow-y:auto;"></div>
+    </div>
     <div class="setting-group">
       <button id="close-settings">Close</button>
     </div>
@@ -223,7 +228,7 @@
       const loadCodeBtn = document.getElementById("load-code");
 
       // Account + Highscore system
-      let account = { highscore: 0 };
+      let account = { highscore: 0, achievements: {} };
       loadAccount();
 
       function encodeAccount(obj) {
@@ -246,8 +251,34 @@
         if (data) {
           account = JSON.parse(data);
         }
+        if(!account.achievements) account.achievements = {};
         accountCodeBox.value = encodeAccount(account);
         highscoreDiv.textContent = "Highscore: " + account.highscore;
+      }
+
+      // --- Achievements System ---
+      const achievementScores = [41, 50, 67, 69, 100, 150, 200, 250, 300, 350, 400, 450, 500];
+
+      function checkAchievements() {
+        achievementScores.forEach(scoreVal => {
+          if (score >= scoreVal && !account.achievements[scoreVal]) {
+            account.achievements[scoreVal] = true;
+            alert(`Achievement unlocked: ${scoreVal} points!`);
+            saveAccount();
+          }
+        });
+      }
+
+      function renderAchievements() {
+        const container = document.getElementById("achievements-list");
+        container.innerHTML = "";
+        achievementScores.forEach(scoreVal => {
+          const unlocked = account.achievements[scoreVal];
+          const div = document.createElement("div");
+          div.textContent = `${scoreVal} points`;
+          div.style.color = unlocked ? "lime" : (darkTheme ? "#888" : "#555");
+          container.appendChild(div);
+        });
       }
 
       function resize() {
@@ -388,6 +419,8 @@
           scoreDiv.textContent = "Score: " + score;
           if (foodIsPowerup) activatePowerup();
           placeFood();
+          checkAchievements();  // Check for new achievements
+          renderAchievements(); // Update achievements display
         } else {
           snake.pop();
         }
@@ -486,6 +519,7 @@
           document.body.style.color = "var(--text-light)";
         }
         snakeColor = darkTheme ? "green" : "#007700";
+        renderAchievements(); // Update colors
         draw();
       });
 
@@ -504,7 +538,9 @@
         let acc = decodeAccount(code);
         if (acc && typeof acc.highscore === "number") {
           account = acc;
+          if(!account.achievements) account.achievements = {};
           saveAccount();
+          renderAchievements();
           alert("Account loaded!");
         } else {
           alert("Invalid code!");
@@ -515,6 +551,7 @@
         resize();
         resetGame();
         saveAccount();
+        renderAchievements();
         requestAnimationFrame(update);
       }
 
