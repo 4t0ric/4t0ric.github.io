@@ -21,18 +21,6 @@
     }
     #score { top: 10px; }
     #highscore { top: 40px; }
-    #powerups {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      font-size: 18px;
-      text-align: right;
-      z-index: 10;
-      user-select: none;
-    }
-    .pu {
-      margin-bottom: 6px;
-    }
     #game-over {
       position: fixed;
       top: 50%;
@@ -47,7 +35,7 @@
     }
     #settings-btn {
       position: fixed;
-      top: 80px;
+      top: 10px;
       right: 10px;
       font-size: 20px;
       padding: 8px 16px;
@@ -88,7 +76,6 @@
 <body>
   <div id="score">Score: 0</div>
   <div id="highscore">Highscore: 0</div>
-  <div id="powerups"></div>
   <div id="game-over">Game Over!<br>Tap or press R to restart</div>
   <button id="settings-btn">⚙️</button>
   <div id="settings-modal">
@@ -126,7 +113,6 @@
       const settingsModal = document.getElementById("settings-modal");
       const closeSettingsBtn = document.getElementById("close-settings");
       const difficultyButtons = document.querySelectorAll(".difficulty-btn");
-      const powerupsDiv = document.getElementById("powerups");
 
       // Account + highscore
       let account = { highscore: 0 };
@@ -157,7 +143,7 @@
         }
       }
 
-      // Powerup states (ms timers)
+      // Powerup states
       let effects = {
         slow: 0,
         inv: 0,
@@ -181,7 +167,6 @@
         placeItem();
         scoreDiv.textContent = "Score: " + score;
         gameOverDiv.style.display = "none";
-        updatePowerupsUI();
       }
 
       function drawCell(x,y,color) {
@@ -224,11 +209,7 @@
         if (gameOver||paused) { requestAnimationFrame(update); return; }
 
         // update timers
-        for (let k in effects) if (effects[k]>0) {
-          effects[k]-=timestamp-lastUpdateTime;
-          if (effects[k]<0) effects[k]=0;
-        }
-        updatePowerupsUI();
+        for (let k in effects) if (effects[k]>0) effects[k]-=timestamp-lastUpdateTime;
 
         const opposites={Up:"Down",Down:"Up",Left:"Right",Right:"Left"};
         if (nextDirection!==opposites[direction]) direction=nextDirection;
@@ -278,22 +259,6 @@
         scoreDiv.textContent="Score: "+score;
         draw();
         requestAnimationFrame(update);
-      }
-
-      function updatePowerupsUI() {
-        powerupsDiv.innerHTML="";
-        if (effects.slow>0) {
-          let sec=Math.ceil(effects.slow/1000);
-          powerupsDiv.innerHTML+=`<div class="pu" style="color:blue">🐌 Slow: ${sec}s</div>`;
-        }
-        if (effects.inv>0) {
-          let sec=Math.ceil(effects.inv/1000);
-          powerupsDiv.innerHTML+=`<div class="pu" style="color:yellow">🛡️ Inv: ${sec}s</div>`;
-        }
-        if (effects.x5>0) {
-          let sec=Math.ceil(effects.x5/1000);
-          powerupsDiv.innerHTML+=`<div class="pu" style="color:violet">✖️5 Score: ${sec}s</div>`;
-        }
       }
 
       function resize() {
