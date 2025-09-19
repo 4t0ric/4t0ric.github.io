@@ -3,526 +3,344 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Snake Game</title>
+  <title>Snake Game with Powerups</title>
   <style>
-    :root {
-      --bg-dark: #000;
-      --bg-light: #f4f4f4;
-      --text-dark: #fff;
-      --text-light: #111;
-      --btn-bg-dark: #222;
-      --btn-bg-light: #ddd;
-      --btn-text-dark: #eee;
-      --btn-text-light: #111;
-    }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background-color: var(--bg-dark);
-      color: var(--text-dark);
+      background: #000;
+      color: #fff;
       overflow: hidden;
-      transition: background-color 0.4s, color 0.4s;
     }
-    #score {
+    #score, #highscore {
       position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 24px;
-      z-index: 10;
-      user-select: none;
-    }
-    #highscore {
-      position: fixed;
-      top: 40px;
       left: 10px;
       font-size: 20px;
+      user-select: none;
+      z-index: 10;
+    }
+    #score { top: 10px; }
+    #highscore { top: 40px; }
+    #powerups {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      font-size: 18px;
+      text-align: right;
       z-index: 10;
       user-select: none;
+    }
+    .pu {
+      margin-bottom: 6px;
     }
     #game-over {
       position: fixed;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%,-50%);
+      font-size: 32px;
       color: red;
-      font-size: 36px;
       text-align: center;
       display: none;
       z-index: 100;
-      user-select: none;
       cursor: pointer;
     }
     #settings-btn {
       position: fixed;
-      top: 10px;
+      top: 80px;
       right: 10px;
-      z-index: 10;
-      padding: 8px 16px;
       font-size: 20px;
-      background-color: var(--btn-bg-dark);
-      color: var(--btn-text-dark);
+      padding: 8px 16px;
+      background: #222;
+      color: #eee;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s, color 0.3s;
-    }
-    #settings-btn:hover {
-      background-color: var(--btn-text-dark);
-      color: var(--btn-bg-dark);
+      z-index: 10;
     }
     #settings-modal {
       position: fixed;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0.9);
-      background-color: rgba(0,0,0,0.9);
-      color: var(--text-dark);
+      transform: translate(-50%,-50%);
+      background: rgba(0,0,0,0.9);
+      color: #fff;
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 0 10px #000;
-      z-index: 1000;
       display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      min-width: 260px;
-      user-select: none;
+      z-index: 200;
+      min-width: 240px;
     }
-    #settings-modal.show {
-      display: block;
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-    }
-    .setting-group {
-      margin-bottom: 18px;
-    }
-    .setting-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: bold;
-    }
-    .setting-group button, 
-    .setting-group textarea {
+    .setting-group { margin-bottom: 12px; }
+    .setting-group button {
       width: 100%;
       padding: 8px;
       margin-top: 4px;
-      font-size: 14px;
+      background: #333;
+      color: #fff;
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      background-color: var(--btn-bg-dark);
-      color: var(--btn-text-dark);
-      transition: background-color 0.3s, color 0.3s;
     }
-    .setting-group button:hover {
-      background-color: var(--btn-text-dark);
-      color: var(--btn-bg-dark);
-    }
-    .setting-group textarea {
-      resize: none;
-      height: 60px;
-      font-family: monospace;
-    }
-    .light-theme {
-      background-color: var(--bg-light);
-      color: var(--text-light);
-    }
-    .light-theme #settings-modal {
-      background-color: #fff;
-      color: var(--text-light);
-      box-shadow: 0 0 12px #aaa;
-    }
-    .light-theme #settings-btn {
-      background-color: var(--btn-bg-light);
-      color: var(--btn-text-light);
-    }
-    .light-theme #settings-btn:hover {
-      background-color: var(--btn-text-light);
-      color: var(--btn-bg-light);
-    }
-    .light-theme .setting-group button {
-      background-color: var(--btn-bg-light);
-      color: var(--btn-text-light);
-    }
-    .light-theme .setting-group button:hover {
-      background-color: var(--btn-text-light);
-      color: var(--btn-bg-light);
-    }
-    canvas {
-      display: block;
-    }
+    canvas { display: block; }
   </style>
 </head>
 <body>
   <div id="score">Score: 0</div>
   <div id="highscore">Highscore: 0</div>
-  <div id="game-over">
-    Game Over!<br>
-    Tap or press R to Restart<br>
-    Control the snake with WASD or swipe on mobile!
-  </div>
+  <div id="powerups"></div>
+  <div id="game-over">Game Over!<br>Tap or press R to restart</div>
   <button id="settings-btn">⚙️</button>
-  <div id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div id="settings-modal">
     <div class="setting-group">
-      <label for="difficulty">Difficulty</label>
+      <label>Difficulty</label>
       <button data-speed="150" class="difficulty-btn">Easy</button>
       <button data-speed="100" class="difficulty-btn">Medium</button>
       <button data-speed="70" class="difficulty-btn">Hard</button>
-    </div>
-    <div class="setting-group">
-      <label>Theme</label>
-      <button id="theme-toggle">Toggle Dark / Light</button>
-    </div>
-    <div class="setting-group">
-      <label>Grid</label>
-      <button id="grid-toggle">Toggle Grid</button>
-    </div>
-    <div class="setting-group">
-      <label>Account Code</label>
-      <textarea id="account-code" readonly></textarea>
-      <button id="copy-code">Copy Code</button>
-      <button id="load-code">Load from Code</button>
     </div>
     <div class="setting-group">
       <button id="close-settings">Close</button>
     </div>
   </div>
   <canvas id="game"></canvas>
+
   <script>
     (() => {
       const CELL_SIZE = 20;
-      const POWERUP_DURATION = 10000;
       let canvas = document.getElementById("game");
       let ctx = canvas.getContext("2d");
       let width, height, columns, rows;
       let snake = [];
       let direction = "Right";
       let nextDirection = "Right";
-      let food = null;
-      let foodIsPowerup = false;
-      let powerupActive = false;
-      let powerupEndTime = 0;
-      let snakeColor = "green";
       let score = 0;
       let gameOver = false;
-      let showGrid = false;
-      let darkTheme = true;
       let updateDelay = 100;
       let lastUpdateTime = 0;
+      let paused = false;
 
       const scoreDiv = document.getElementById("score");
       const highscoreDiv = document.getElementById("highscore");
       const gameOverDiv = document.getElementById("game-over");
       const settingsBtn = document.getElementById("settings-btn");
       const settingsModal = document.getElementById("settings-modal");
-      const themeToggleBtn = document.getElementById("theme-toggle");
-      const gridToggleBtn = document.getElementById("grid-toggle");
       const closeSettingsBtn = document.getElementById("close-settings");
       const difficultyButtons = document.querySelectorAll(".difficulty-btn");
-      const accountCodeBox = document.getElementById("account-code");
-      const copyCodeBtn = document.getElementById("copy-code");
-      const loadCodeBtn = document.getElementById("load-code");
+      const powerupsDiv = document.getElementById("powerups");
 
-      // Account + Highscore system
+      // Account + highscore
       let account = { highscore: 0 };
-      loadAccount();
-
-      function encodeAccount(obj) {
-        return btoa(JSON.stringify(obj));
-      }
-      function decodeAccount(code) {
-        try {
-          return JSON.parse(atob(code));
-        } catch {
-          return null;
-        }
+      function loadAccount() {
+        let data = localStorage.getItem("snakeAccount");
+        if (data) account = JSON.parse(data);
+        highscoreDiv.textContent = "Highscore: " + account.highscore;
       }
       function saveAccount() {
         localStorage.setItem("snakeAccount", JSON.stringify(account));
-        accountCodeBox.value = encodeAccount(account);
-        highscoreDiv.textContent = "Highscore: " + account.highscore;
-      }
-      function loadAccount() {
-        let data = localStorage.getItem("snakeAccount");
-        if (data) {
-          account = JSON.parse(data);
-        }
-        accountCodeBox.value = encodeAccount(account);
         highscoreDiv.textContent = "Highscore: " + account.highscore;
       }
 
-      function resize() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-        columns = Math.floor(width / CELL_SIZE);
-        rows = Math.floor(height / CELL_SIZE);
-      }
-
-      function resetGame() {
-        snakeColor = darkTheme ? "green" : "#007700";
-        powerupActive = false;
-        powerupEndTime = 0;
-        gameOver = false;
-        score = 0;
-        direction = "Right";
-        nextDirection = "Right";
-        const startX = Math.floor(columns / 2);
-        const startY = Math.floor(rows / 2);
-        snake = [
-          { x: startX, y: startY },
-          { x: startX - 1, y: startY },
-          { x: startX - 2, y: startY },
-        ];
-        placeFood();
-        scoreDiv.textContent = "Score: " + score;
-        gameOverDiv.style.display = "none";
-      }
-
-      function placeFood() {
+      // Food + powerups
+      let items = []; // {x,y,type}
+      function placeItem() {
         while (true) {
           let x = Math.floor(Math.random() * columns);
           let y = Math.floor(Math.random() * rows);
           if (!snake.some(seg => seg.x === x && seg.y === y)) {
-            food = { x, y };
-            foodIsPowerup = Math.random() < 0.05;
+            let r = Math.random();
+            if (r < 0.01) items.push({x,y,type:"x5"});       // 1% Score x5
+            else if (r < 0.03) items.push({x,y,type:"inv"}); // 2% Invincible
+            else if (r < 0.08) items.push({x,y,type:"slow"});// 5% Slow
+            else items.push({x,y,type:"food"});              // Normal
             break;
           }
         }
       }
 
-      function activatePowerup() {
-        powerupActive = true;
-        snakeColor = "orange";
-        powerupEndTime = Date.now() + POWERUP_DURATION;
+      // Powerup states (ms timers)
+      let effects = {
+        slow: 0,
+        inv: 0,
+        x5: 0
+      };
+
+      function resetGame() {
+        score = 0;
+        direction = "Right";
+        nextDirection = "Right";
+        gameOver = false;
+        items = [];
+        effects = {slow:0, inv:0, x5:0};
+        const startX = Math.floor(columns/2);
+        const startY = Math.floor(rows/2);
+        snake = [
+          {x:startX,y:startY},
+          {x:startX-1,y:startY},
+          {x:startX-2,y:startY}
+        ];
+        placeItem();
+        scoreDiv.textContent = "Score: " + score;
+        gameOverDiv.style.display = "none";
+        updatePowerupsUI();
       }
 
-      function drawCell(x, y, color) {
+      function drawCell(x,y,color) {
         ctx.fillStyle = color;
-        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        ctx.strokeStyle = darkTheme ? "#222" : "#ccc";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
-
-      function drawGrid() {
-        ctx.strokeStyle = darkTheme ? "#222" : "#ccc";
-        ctx.lineWidth = 1;
-        for (let x = 0; x <= columns; x++) {
-          ctx.beginPath();
-          ctx.moveTo(x * CELL_SIZE, 0);
-          ctx.lineTo(x * CELL_SIZE, rows * CELL_SIZE);
-          ctx.stroke();
-        }
-        for (let y = 0; y <= rows; y++) {
-          ctx.beginPath();
-          ctx.moveTo(0, y * CELL_SIZE);
-          ctx.lineTo(columns * CELL_SIZE, y * CELL_SIZE);
-          ctx.stroke();
-        }
+        ctx.fillRect(x*CELL_SIZE,y*CELL_SIZE,CELL_SIZE,CELL_SIZE);
       }
 
       function draw() {
-        ctx.clearRect(0, 0, width, height);
-        if (showGrid) drawGrid();
-        drawCell(food.x, food.y, foodIsPowerup ? "orange" : "red");
-        snake.forEach((seg, i) => {
-          drawCell(seg.x, seg.y, i === 0 ? "lime" : snakeColor);
+        ctx.clearRect(0,0,width,height);
+        items.forEach(item => {
+          let c = "red";
+          if (item.type==="slow") c="blue";
+          if (item.type==="inv") c="yellow";
+          if (item.type==="x5") c="purple";
+          drawCell(item.x,item.y,c);
+        });
+        snake.forEach((seg,i) => {
+          drawCell(seg.x,seg.y,i===0?"lime":"green");
         });
       }
 
       function endGame() {
+        if (effects.inv>0) return; // invincible active
         gameOver = true;
-        gameOverDiv.style.display = "block";
-        if (score > account.highscore) {
-          account.highscore = score;
+        gameOverDiv.style.display="block";
+        if (score>account.highscore) {
+          account.highscore=score;
           saveAccount();
         }
       }
 
       function update(timestamp) {
-        if (!lastUpdateTime) lastUpdateTime = timestamp;
-        if (timestamp - lastUpdateTime < updateDelay) {
-          requestAnimationFrame(update);
-          return;
+        if (!lastUpdateTime) lastUpdateTime=timestamp;
+        let currentDelay = updateDelay;
+        if (effects.slow>0) currentDelay*=2;
+        if (timestamp-lastUpdateTime<currentDelay) {
+          requestAnimationFrame(update); return;
         }
-        lastUpdateTime = timestamp;
+        lastUpdateTime=timestamp;
+        if (gameOver||paused) { requestAnimationFrame(update); return; }
 
-        if (gameOver) {
-          requestAnimationFrame(update);
-          return;
+        // update timers
+        for (let k in effects) if (effects[k]>0) {
+          effects[k]-=timestamp-lastUpdateTime;
+          if (effects[k]<0) effects[k]=0;
         }
+        updatePowerupsUI();
 
-        if (powerupActive && Date.now() > powerupEndTime) {
-          powerupActive = false;
-          snakeColor = darkTheme ? "green" : "#007700";
-        }
+        const opposites={Up:"Down",Down:"Up",Left:"Right",Right:"Left"};
+        if (nextDirection!==opposites[direction]) direction=nextDirection;
 
-        const opposites = { Up: "Down", Down: "Up", Left: "Right", Right: "Left" };
-        if (nextDirection !== opposites[direction]) {
-          direction = nextDirection;
-        }
+        let head={...snake[0]};
+        if (direction==="Right") head.x++;
+        if (direction==="Left") head.x--;
+        if (direction==="Up") head.y--;
+        if (direction==="Down") head.y++;
 
-        let head = { ...snake[0] };
-        switch (direction) {
-          case "Right": head.x++; break;
-          case "Left": head.x--; break;
-          case "Up": head.y--; break;
-          case "Down": head.y++; break;
-        }
-
+        // collision
         if (
-          head.x < 0 || head.x >= columns ||
-          head.y < 0 || head.y >= rows ||
-          snake.some(seg => seg.x === head.x && seg.y === head.y)
+          head.x<0||head.x>=columns||head.y<0||head.y>=rows||
+          snake.some(seg=>seg.x===head.x&&seg.y===head.y)
         ) {
           endGame();
-          requestAnimationFrame(update);
-          return;
+          requestAnimationFrame(update); return;
         }
 
         snake.unshift(head);
-
-        if (head.x === food.x && head.y === food.y) {
-          score++;
-          scoreDiv.textContent = "Score: " + score;
-          if (foodIsPowerup) activatePowerup();
-          placeFood();
-        } else {
-          snake.pop();
+        let ate=false;
+        for (let i=0;i<items.length;i++) {
+          let it=items[i];
+          if (it.x===head.x&&it.y===head.y) {
+            ate=true;
+            if (it.type==="food") {
+              score+=effects.x5>0?5:1;
+            }
+            if (it.type==="slow") {
+              effects.slow=5000;
+              score+=effects.x5>0?5:1;
+            }
+            if (it.type==="inv") {
+              effects.inv=10000;
+              score+=effects.x5>0?5:1;
+            }
+            if (it.type==="x5") {
+              effects.x5=10000;
+              score+=5;
+            }
+            items.splice(i,1);
+            placeItem();
+            break;
+          }
         }
-
+        if (!ate) snake.pop();
+        scoreDiv.textContent="Score: "+score;
         draw();
         requestAnimationFrame(update);
       }
 
-      window.addEventListener("keydown", e => {
-        if (gameOver && (e.key === "r" || e.key === "R")) {
-          resetGame();
-          return;
+      function updatePowerupsUI() {
+        powerupsDiv.innerHTML="";
+        if (effects.slow>0) {
+          let sec=Math.ceil(effects.slow/1000);
+          powerupsDiv.innerHTML+=`<div class="pu" style="color:blue">🐌 Slow: ${sec}s</div>`;
         }
-        const keyDirMap = {
-          ArrowUp: "Up", ArrowDown: "Down",
-          ArrowLeft: "Left", ArrowRight: "Right",
-          w: "Up", s: "Down", a: "Left", d: "Right"
-        };
-        let dir = keyDirMap[e.key];
+        if (effects.inv>0) {
+          let sec=Math.ceil(effects.inv/1000);
+          powerupsDiv.innerHTML+=`<div class="pu" style="color:yellow">🛡️ Inv: ${sec}s</div>`;
+        }
+        if (effects.x5>0) {
+          let sec=Math.ceil(effects.x5/1000);
+          powerupsDiv.innerHTML+=`<div class="pu" style="color:violet">✖️5 Score: ${sec}s</div>`;
+        }
+      }
+
+      function resize() {
+        width=window.innerWidth;
+        height=window.innerHeight;
+        canvas.width=width;
+        canvas.height=height;
+        columns=Math.floor(width/CELL_SIZE);
+        rows=Math.floor(height/CELL_SIZE);
+      }
+
+      // controls
+      window.addEventListener("keydown",e=>{
+        if (gameOver&&(e.key==="r"||e.key==="R")) { resetGame(); return; }
+        const map={ArrowUp:"Up",ArrowDown:"Down",ArrowLeft:"Left",ArrowRight:"Right",
+                   w:"Up",s:"Down",a:"Left",d:"Right"};
+        let dir=map[e.key];
         if (!dir) return;
-        const opposites = { Up: "Down", Down: "Up", Left: "Right", Right: "Left" };
-        if (dir !== opposites[direction]) {
-          nextDirection = dir;
-        }
+        const opposites={Up:"Down",Down:"Up",Left:"Right",Right:"Left"};
+        if (dir!==opposites[direction]) nextDirection=dir;
       });
 
-      // Touch swipe support
-      let touchStartX = null;
-      let touchStartY = null;
-      const SWIPE_THRESHOLD = 30;
+      gameOverDiv.addEventListener("click",()=>{ if(gameOver) resetGame(); });
 
-      canvas.addEventListener('touchstart', e => {
-        e.preventDefault();
-        if (gameOver) {
-          resetGame();
-          return;
-        }
-        const touch = e.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-      }, {passive: false});
-
-      canvas.addEventListener('touchend', e => {
-        e.preventDefault();
-        if (touchStartX === null || touchStartY === null) return;
-        const touch = e.changedTouches[0];
-        let deltaX = touch.clientX - touchStartX;
-        let deltaY = touch.clientY - touchStartY;
-
-        if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) {
-          if (gameOver) resetGame();
-          touchStartX = null;
-          touchStartY = null;
-          return;
-        }
-
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          if (deltaX > 0 && direction !== "Left") nextDirection = "Right";
-          else if (deltaX < 0 && direction !== "Right") nextDirection = "Left";
-        } else {
-          if (deltaY > 0 && direction !== "Up") nextDirection = "Down";
-          else if (deltaY < 0 && direction !== "Down") nextDirection = "Up";
-        }
-        touchStartX = null;
-        touchStartY = null;
-      }, {passive: false});
-
-      gameOverDiv.addEventListener("click", () => {
-        if (gameOver) resetGame();
+      settingsBtn.addEventListener("click",()=>{
+        paused=!paused;
+        settingsModal.style.display=paused?"block":"none";
       });
-
-      settingsBtn.addEventListener("click", () => {
-        settingsModal.classList.toggle("show");
+      closeSettingsBtn.addEventListener("click",()=>{
+        paused=false;
+        settingsModal.style.display="none";
       });
-
-      closeSettingsBtn.addEventListener("click", () => {
-        settingsModal.classList.remove("show");
-      });
-
-      difficultyButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-          updateDelay = parseInt(btn.dataset.speed, 10);
-          settingsModal.classList.remove("show");
+      difficultyButtons.forEach(btn=>{
+        btn.addEventListener("click",()=>{
+          updateDelay=parseInt(btn.dataset.speed,10);
+          paused=false;
+          settingsModal.style.display="none";
         });
-      });
-
-      themeToggleBtn.addEventListener("click", () => {
-        darkTheme = !darkTheme;
-        if (darkTheme) {
-          document.body.classList.remove("light-theme");
-          document.body.style.backgroundColor = "var(--bg-dark)";
-          document.body.style.color = "var(--text-dark)";
-        } else {
-          document.body.classList.add("light-theme");
-          document.body.style.backgroundColor = "var(--bg-light)";
-          document.body.style.color = "var(--text-light)";
-        }
-        snakeColor = darkTheme ? "green" : "#007700";
-        draw();
-      });
-
-      gridToggleBtn.addEventListener("click", () => {
-        showGrid = !showGrid;
-        draw();
-      });
-
-      // Account system buttons
-      copyCodeBtn.addEventListener("click", () => {
-        accountCodeBox.select();
-        document.execCommand("copy");
-      });
-      loadCodeBtn.addEventListener("click", () => {
-        let code = prompt("Paste your account code:");
-        let acc = decodeAccount(code);
-        if (acc && typeof acc.highscore === "number") {
-          account = acc;
-          saveAccount();
-          alert("Account loaded!");
-        } else {
-          alert("Invalid code!");
-        }
       });
 
       function init() {
         resize();
+        loadAccount();
         resetGame();
-        saveAccount();
         requestAnimationFrame(update);
       }
-
-      window.addEventListener("resize", () => {
-        resize();
-        draw();
-      });
-
+      window.addEventListener("resize",()=>{ resize(); draw(); });
       init();
     })();
   </script>
