@@ -1,4 +1,218 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Snake Game</title>
+  <style>
+    :root {
+      --bg-dark: #000;
+      --bg-light: #f4f4f4;
+      --text-dark: #fff;
+      --text-light: #111;
+      --btn-bg-dark: #222;
+      --btn-bg-light: #ddd;
+      --btn-text-dark: #eee;
+      --btn-text-light: #111;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+      overflow: hidden;
+      transition: background-color 0.4s, color 0.4s;
+    }
+    #score {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      z-index: 10;
+      user-select: none;
+    }
+    #highscore {
+      position: fixed;
+      top: 40px;
+      left: 10px;
+      font-size: 20px;
+      z-index: 10;
+      user-select: none;
+    }
+    #game-over {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: red;
+      font-size: 36px;
+      text-align: center;
+      display: none;
+      z-index: 100;
+      user-select: none;
+      cursor: pointer;
+    }
+    #powerup-bar-container {
+      position: fixed;
+      top: 70px;
+      left: 10px;
+      width: 200px;
+      height: 20px;
+      background-color: #444;
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+      z-index: 10;
+    }
+    #powerup-bar {
+      width: 100%;
+      height: 100%;
+      background-color: orange;
+      transition: width 0.1s linear;
+    }
+    #settings-btn, #achievements-btn {
+      position: fixed;
+      top: 10px;
+      z-index: 10;
+      padding: 8px 16px;
+      font-size: 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    #settings-btn {
+      right: 10px;
+      background-color: var(--btn-bg-dark);
+      color: var(--btn-text-dark);
+    }
+    #achievements-btn {
+      right: 140px;
+      background-color: var(--btn-bg-dark);
+      color: var(--btn-text-dark);
+    }
+    #settings-btn:hover, #achievements-btn:hover {
+      background-color: var(--btn-text-dark);
+      color: var(--btn-bg-dark);
+    }
+    .light-theme #settings-btn, .light-theme #achievements-btn {
+      background-color: var(--btn-bg-light);
+      color: var(--btn-text-light);
+    }
+    .light-theme #settings-btn:hover, .light-theme #achievements-btn:hover {
+      background-color: var(--btn-text-light);
+      color: var(--btn-bg-light);
+    }
+    #settings-modal, #achievements-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #000;
+      z-index: 1000;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      min-width: 260px;
+      user-select: none;
+    }
+    #settings-modal { background-color: rgba(0,0,0,0.9); color: var(--text-dark); }
+    #achievements-modal { background-color: rgba(0,0,0,0.9); color: var(--text-dark); }
+    #settings-modal.show {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .setting-group { margin-bottom: 18px; }
+    .setting-group label { display: block; margin-bottom: 6px; font-weight: bold; }
+    .setting-group button, .setting-group textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: var(--btn-bg-dark);
+      color: var(--btn-text-dark);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .setting-group button:hover {
+      background-color: var(--btn-text-dark);
+      color: var(--btn-bg-dark);
+    }
+    .setting-group textarea {
+      resize: none;
+      height: 60px;
+      font-family: monospace;
+    }
+    .light-theme #settings-modal, .light-theme #achievements-modal {
+      background-color: #fff;
+      color: var(--text-light);
+      box-shadow: 0 0 12px #aaa;
+    }
+    .light-theme .setting-group button {
+      background-color: var(--btn-bg-light);
+      color: var(--btn-text-light);
+    }
+    .light-theme .setting-group button:hover {
+      background-color: var(--btn-text-light);
+      color: var(--btn-bg-light);
+    }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <div id="score">Score: 0</div>
+  <div id="highscore">Highscore: 0</div>
+  <div id="powerup-bar-container"><div id="powerup-bar"></div></div>
+  <div id="game-over">
+    Game Over!<br>
+    Tap or press R to Restart<br>
+    Control the snake with WASD or swipe on mobile!
+  </div>
+  <button id="settings-btn">⚙️</button>
+  <button id="achievements-btn">🏆</button>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="setting-group">
+      <label for="difficulty">Difficulty</label>
+      <button data-speed="150" class="difficulty-btn">Easy</button>
+      <button data-speed="100" class="difficulty-btn">Medium</button>
+      <button data-speed="70" class="difficulty-btn">Hard</button>
+    </div>
+    <div class="setting-group">
+      <label>Theme</label>
+      <button id="theme-toggle">Toggle Dark / Light</button>
+    </div>
+    <div class="setting-group">
+      <label>Grid</label>
+      <button id="grid-toggle">Toggle Grid</button>
+    </div>
+    <div class="setting-group">
+      <label>Account Code</label>
+      <textarea id="account-code" readonly></textarea>
+      <button id="copy-code">Copy Code</button>
+      <button id="load-code">Load from Code</button>
+    </div>
+    <div class="setting-group">
+      <button id="close-settings">Close</button>
+    </div>
+  </div>
+
+  <!-- Achievements Modal -->
+  <div id="achievements-modal" role="dialog" aria-modal="true" aria-labelledby="achievements-title">
+    <h2>Achievements</h2>
+    <div id="achievements-list-modal" style="max-height:200px; overflow-y:auto;"></div>
+    <button id="close-achievements" style="margin-top:10px;">Close</button>
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <script>
 (() => {
   const CELL_SIZE = 20;
   const POWERUP_DURATION_ORANGE = 20000;
@@ -12,7 +226,7 @@
   let snake = [], direction = "Right", nextDirection = "Right";
   let food = null, foodIsPowerup = false;
   let powerupActive = false, powerupEndTime = 0;
-  let powerupType = ""; // "orange", "half", "inv", "score"
+  let powerupType = "";
   let snakeColor = "green", score = 0, gameOver = false, showGrid = false, darkTheme = true;
   let updateDelay = 100, lastUpdateTime = 0, gamePaused = false;
 
@@ -34,7 +248,6 @@
   const copyCodeBtn = document.getElementById("copy-code");
   const loadCodeBtn = document.getElementById("load-code");
 
-  // Account + Highscore + Achievements
   let account = { highscore:0, achievements:{} };
   const achievementScores = [41,50,67,69,100,150,200,250,300,350,400,450,500];
 
@@ -83,12 +296,11 @@
       let x=Math.floor(Math.random()*columns),y=Math.floor(Math.random()*rows);
       if(!snake.some(seg=>seg.x===x && seg.y===y)){
         food={x,y};
-        // 5% orange, 5% each other power-up
         let r=Math.random();
         if(r<0.05) foodIsPowerup = "orange";
-        else if(r<0.10) foodIsPowerup = "half";
-        else if(r<0.15) foodIsPowerup = "inv";
-        else if(r<0.20) foodIsPowerup = "score";
+        else if(r<0.05+0.05) foodIsPowerup = "half";
+        else if(r<0.10+0.05) foodIsPowerup = "inv";
+        else if(r<0.15+0.05) foodIsPowerup = "score";
         else foodIsPowerup = false;
         break;
       }
@@ -314,4 +526,6 @@
   window.addEventListener("resize",()=>{ resize(); draw(); });
   init();
 })();
-</script>
+  </script>
+</body>
+</html>
