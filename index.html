@@ -52,6 +52,24 @@
       user-select: none;
       cursor: pointer;
     }
+    #powerup-bar-container {
+      position: fixed;
+      top: 70px;
+      left: 10px;
+      width: 200px;
+      height: 20px;
+      background-color: #444;
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+      z-index: 10;
+    }
+    #powerup-bar {
+      width: 100%;
+      height: 100%;
+      background-color: orange;
+      transition: width 0.1s linear;
+    }
     #settings-btn, #achievements-btn {
       position: fixed;
       top: 10px;
@@ -144,32 +162,12 @@
       color: var(--btn-bg-light);
     }
     canvas { display: block; }
-
-    /* Power-up bar */
-    #powerup-bar {
-      position: fixed;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 300px;
-      height: 20px;
-      background-color: #444;
-      border-radius: 10px;
-      display: none;
-      overflow: hidden;
-      z-index: 20;
-    }
-    #powerup-fill {
-      height: 100%;
-      width: 0%;
-      background-color: orange;
-      transition: width 0.05s linear;
-    }
   </style>
 </head>
 <body>
   <div id="score">Score: 0</div>
   <div id="highscore">Highscore: 0</div>
+  <div id="powerup-bar-container"><div id="powerup-bar"></div></div>
   <div id="game-over">
     Game Over!<br>
     Tap or press R to Restart<br>
@@ -177,9 +175,6 @@
   </div>
   <button id="settings-btn">⚙️</button>
   <button id="achievements-btn">🏆</button>
-
-  <!-- Power-up bar -->
-  <div id="powerup-bar"><div id="powerup-fill"></div></div>
 
   <!-- Settings Modal -->
   <div id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -220,19 +215,20 @@
   <script>
     (() => {
       const CELL_SIZE = 20;
-      const POWERUP_DURATION = { halfSpeed:5000, invincible:10000, x5Score:10000 };
+      const POWERUP_DURATION = 10000;
       let canvas = document.getElementById("game");
       let ctx = canvas.getContext("2d");
       let width, height, columns, rows;
       let snake = [], direction = "Right", nextDirection = "Right";
-      let food = null, foodIsPowerup = false, powerupActive = false, powerupEndTime = 0, currentPowerup = null;
+      let food = null, foodIsPowerup = false, powerupActive = false, powerupEndTime = 0;
       let snakeColor = "green", score = 0, gameOver = false, showGrid = false, darkTheme = true;
-      let updateDelay = 100, lastUpdateTime = 0, gamePaused = false, normalSpeed = 100;
-      let invincible = false, x5scoreActive = false;
+      let updateDelay = 100, lastUpdateTime = 0, gamePaused = false;
 
       const scoreDiv = document.getElementById("score");
       const highscoreDiv = document.getElementById("highscore");
       const gameOverDiv = document.getElementById("game-over");
+      const powerupBarContainer = document.getElementById("powerup-bar-container");
+      const powerupBar = document.getElementById("powerup-bar");
       const settingsBtn = document.getElementById("settings-btn");
       const achievementsBtn = document.getElementById("achievements-btn");
       const settingsModal = document.getElementById("settings-modal");
@@ -245,8 +241,6 @@
       const accountCodeBox = document.getElementById("account-code");
       const copyCodeBtn = document.getElementById("copy-code");
       const loadCodeBtn = document.getElementById("load-code");
-      const powerupBar = document.getElementById("powerup-bar");
-      const powerupFill = document.getElementById("powerup-fill");
 
       // Account + Highscore + Achievements
       let account = { highscore:0, achievements:{} };
@@ -280,10 +274,7 @@
         snakeColor=darkTheme?"green":"#007700";
         powerupActive=false;
         powerupEndTime=0;
-        currentPowerup = null;
-        invincible=false;
-        x5scoreActive=false;
-        updateDelay=normalSpeed;
+        powerupBarContainer.style.display="none";
         gameOver=false;
         score=0;
         direction=nextDirection="Right";
@@ -292,7 +283,6 @@
         placeFood();
         scoreDiv.textContent="Score:"+score;
         gameOverDiv.style.display="none";
-        powerupBar.style.display="none";
       }
 
       function placeFood(){
@@ -300,35 +290,48 @@
           let x=Math.floor(Math.random()*columns),y=Math.floor(Math.random()*rows);
           if(!snake.some(seg=>seg.x===x && seg.y===y)){
             food={x,y};
-            const r=Math.random()*100;
-            if(r<1) foodIsPowerup="x5score";        //1%
-            else if(r<3) foodIsPowerup="invincible"; //2%
-            else if(r<8) foodIsPowerup="halfSpeed";  //5%
-            else foodIsPowerup=false;
+            // Power-ups probabilities: half speed 5%, invincible 2%, x5score 1%
+            let rand=Math.random();
+            if(rand<0.05) food.power="halfSpeed";
+            else if(rand<0.07) food.power="invincible";
+            else if(rand<0.08) food.power="x5score";
+            else food.power=null;
+            foodIsPowerup=!!food.power;
             break;
           }
         }
       }
 
-      function activatePowerup(type){
+      function activatePowerup(){
         powerupActive=true;
-        currentPowerup=type;
-        powerupEndTime=Date.now()+POWERUP_DURATION[type];
-        powerupBar.style.display="block";
-        if(type==="halfSpeed"){ updateDelay=updateDelay*2; snakeColor="orange"; }
-        if(type==="invincible"){ invincible=true; snakeColor="cyan"; }
-        if(type==="x5score"){ x5scoreActive=true; snakeColor="magenta"; }
+        powerupEndTime=Date.now()+POWERUP_DURATION;
+        powerupBarContainer.style.display="block";
+        switch(food.power){
+          case "halfSpeed":
+            updateDelay/=2;
+            snakeColor="blue";
+            break;
+          case "invincible":
+            snake.invincible=true;
+            snakeColor="cyan";
+            break;
+          case "x5score":
+            snake.x5score=true;
+            snakeColor="magenta";
+            break;
+        }
       }
 
       function deactivatePowerup(){
         powerupActive=false;
-        currentPowerup=null;
-        updateDelay=normalSpeed;
-        invincible=false;
-        x5scoreActive=false;
+        powerupBarContainer.style.display="none";
         snakeColor=darkTheme?"green":"#007700";
-        powerupBar.style.display="none";
+        updateDelay=updateDelayOriginal;
+        snake.invincible=false;
+        snake.x5score=false;
       }
+
+      let updateDelayOriginal = updateDelay;
 
       function drawCell(x,y,color){
         ctx.fillStyle=color;
@@ -358,13 +361,14 @@
       function draw(){
         ctx.clearRect(0,0,width,height);
         if(showGrid) drawGrid();
-        drawCell(food.x,food.y,foodIsPowerup? (foodIsPowerup==="halfSpeed"?"orange":foodIsPowerup==="invincible"?"cyan":"magenta") : "red");
+        drawCell(food.x,food.y,foodIsPowerup?"orange":"red");
         snake.forEach((seg,i)=>drawCell(seg.x,seg.y,i===0?"lime":snakeColor));
       }
 
       function endGame(){
         gameOver=true;
         gameOverDiv.style.display="block";
+        powerupBarContainer.style.display="none";
         if(score>account.highscore){
           account.highscore=score;
           saveAccount();
@@ -406,9 +410,12 @@
         }
 
         if(powerupActive){
-          const remaining = powerupEndTime-Date.now();
-          if(remaining<=0){ deactivatePowerup(); }
-          else { powerupFill.style.width=(remaining/POWERUP_DURATION[currentPowerup]*100)+"%"; }
+          let remaining=(powerupEndTime-Date.now())/POWERUP_DURATION;
+          if(remaining<=0){
+            deactivatePowerup();
+          } else {
+            powerupBar.style.width=(remaining*100)+"%";
+          }
         }
 
         const opposites={Up:"Down",Down:"Up",Left:"Right",Right:"Left"};
@@ -420,20 +427,24 @@
           case "Up": head.y--; break;
           case "Down": head.y++; break;
         }
-        if((!invincible && (head.x<0||head.x>=columns||head.y<0||snake.some(seg=>seg.x===head.x&&seg.y===head.y)))){
+
+        if(!snake.invincible && (head.x<0||head.x>=columns||head.y<0||head.y>=rows||snake.some(seg=>seg.x===head.x&&seg.y===head.y))){
           endGame();
           requestAnimationFrame(update);
           return;
         }
 
         snake.unshift(head);
+
         if(head.x===food.x && head.y===food.y){
-          score += x5scoreActive ? 5 : 1;
+          score += snake.x5score ? 5 : 1;
           scoreDiv.textContent="Score:"+score;
-          if(foodIsPowerup) activatePowerup(foodIsPowerup);
+          if(foodIsPowerup) activatePowerup();
           placeFood();
           checkAchievements();
-        } else { snake.pop(); }
+        } else {
+          snake.pop();
+        }
 
         draw();
         requestAnimationFrame(update);
@@ -483,8 +494,7 @@
       // Settings & Achievements buttons
       settingsBtn.addEventListener("click",()=>{
         settingsModal.classList.toggle("show");
-        if(settingsModal.classList.contains("show")) gamePaused=true;
-        else gamePaused=false;
+        gamePaused = settingsModal.classList.contains("show");
       });
       closeSettingsBtn.addEventListener("click",()=>{
         settingsModal.classList.remove("show");
@@ -503,37 +513,39 @@
         achievementsModal.style.transform="translate(-50%, -50%) scale(0.9)";
         gamePaused=false;
       });
+
       difficultyButtons.forEach(btn=>{
         btn.addEventListener("click",()=>{
-          normalSpeed=parseInt(btn.dataset.speed,10);
-          updateDelay=normalSpeed;
+          updateDelay=parseInt(btn.dataset.speed,10);
+          updateDelayOriginal = updateDelay;
           settingsModal.classList.remove("show");
           gamePaused=false;
         });
       });
+
       themeToggleBtn.addEventListener("click",()=>{
         darkTheme=!darkTheme;
         if(darkTheme){
           document.body.classList.remove("light-theme");
-          document.body.style.backgroundColor="var(--bg-dark)";
-          document.body.style.color="var(--text-dark)";
+          snakeColor="green";
         }else{
           document.body.classList.add("light-theme");
-          document.body.style.backgroundColor="var(--bg-light)";
-          document.body.style.color="var(--text-light)";
+          snakeColor="#007700";
         }
-        snakeColor=darkTheme?"green":"#007700";
         draw();
         renderAchievementsModal();
       });
+
       gridToggleBtn.addEventListener("click",()=>{
         showGrid=!showGrid;
         draw();
       });
+
       copyCodeBtn.addEventListener("click",()=>{
         accountCodeBox.select();
         document.execCommand("copy");
       });
+
       loadCodeBtn.addEventListener("click",()=>{
         let code=prompt("Paste your account code:");
         let acc=decodeAccount(code);
@@ -548,8 +560,8 @@
 
       function init(){
         resize();
-        resetGame();
         loadAccount();
+        resetGame();
         renderAchievementsModal();
         requestAnimationFrame(update);
       }
