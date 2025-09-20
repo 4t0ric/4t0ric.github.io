@@ -68,7 +68,7 @@
       width: 100%;
       height: 100%;
       background-color: orange;
-      transition: width 0.1s linear;
+      transition: width 0.1s linear, background-color 0.3s;
     }
     #settings-btn, #achievements-btn {
       position: fixed;
@@ -81,27 +81,16 @@
       cursor: pointer;
       transition: background-color 0.3s, color 0.3s;
     }
-    #settings-btn {
-      right: 10px;
-      background-color: var(--btn-bg-dark);
-      color: var(--btn-text-dark);
-    }
-    #achievements-btn {
-      right: 140px;
-      background-color: var(--btn-bg-dark);
-      color: var(--btn-text-dark);
-    }
+    #settings-btn { right: 10px; background-color: var(--btn-bg-dark); color: var(--btn-text-dark); }
+    #achievements-btn { right: 140px; background-color: var(--btn-bg-dark); color: var(--btn-text-dark); }
     #settings-btn:hover, #achievements-btn:hover {
-      background-color: var(--btn-text-dark);
-      color: var(--btn-bg-dark);
+      background-color: var(--btn-text-dark); color: var(--btn-bg-dark);
     }
     .light-theme #settings-btn, .light-theme #achievements-btn {
-      background-color: var(--btn-bg-light);
-      color: var(--btn-text-light);
+      background-color: var(--btn-bg-light); color: var(--btn-text-light);
     }
     .light-theme #settings-btn:hover, .light-theme #achievements-btn:hover {
-      background-color: var(--btn-text-light);
-      color: var(--btn-bg-light);
+      background-color: var(--btn-text-light); color: var(--btn-bg-light);
     }
     #settings-modal, #achievements-modal {
       position: fixed;
@@ -121,46 +110,20 @@
     #settings-modal { background-color: rgba(0,0,0,0.9); color: var(--text-dark); }
     #achievements-modal { background-color: rgba(0,0,0,0.9); color: var(--text-dark); }
     #settings-modal.show {
-      display: block;
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
+      display: block; opacity: 1; transform: translate(-50%, -50%) scale(1);
     }
     .setting-group { margin-bottom: 18px; }
     .setting-group label { display: block; margin-bottom: 6px; font-weight: bold; }
     .setting-group button, .setting-group textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      font-size: 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      background-color: var(--btn-bg-dark);
-      color: var(--btn-text-dark);
+      width: 100%; padding: 8px; margin-top: 4px; font-size: 14px; border: none; border-radius: 6px;
+      cursor: pointer; background-color: var(--btn-bg-dark); color: var(--btn-text-dark);
       transition: background-color 0.3s, color 0.3s;
     }
-    .setting-group button:hover {
-      background-color: var(--btn-text-dark);
-      color: var(--btn-bg-dark);
-    }
-    .setting-group textarea {
-      resize: none;
-      height: 60px;
-      font-family: monospace;
-    }
-    .light-theme #settings-modal, .light-theme #achievements-modal {
-      background-color: #fff;
-      color: var(--text-light);
-      box-shadow: 0 0 12px #aaa;
-    }
-    .light-theme .setting-group button {
-      background-color: var(--btn-bg-light);
-      color: var(--btn-text-light);
-    }
-    .light-theme .setting-group button:hover {
-      background-color: var(--btn-text-light);
-      color: var(--btn-bg-light);
-    }
+    .setting-group button:hover { background-color: var(--btn-text-dark); color: var(--btn-bg-dark); }
+    .setting-group textarea { resize: none; height: 60px; font-family: monospace; }
+    .light-theme #settings-modal, .light-theme #achievements-modal { background-color: #fff; color: var(--text-light); box-shadow: 0 0 12px #aaa; }
+    .light-theme .setting-group button { background-color: var(--btn-bg-light); color: var(--btn-text-light); }
+    .light-theme .setting-group button:hover { background-color: var(--btn-text-light); color: var(--btn-bg-light); }
     canvas { display: block; }
   </style>
 </head>
@@ -176,21 +139,18 @@
   <button id="settings-btn">⚙️</button>
   <button id="achievements-btn">🏆</button>
 
-  <!-- Settings Modal -->
-  <div id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div id="settings-modal">
     <div class="setting-group">
-      <label for="difficulty">Difficulty</label>
+      <label>Difficulty</label>
       <button data-speed="150" class="difficulty-btn">Easy</button>
       <button data-speed="100" class="difficulty-btn">Medium</button>
       <button data-speed="70" class="difficulty-btn">Hard</button>
     </div>
     <div class="setting-group">
-      <label>Theme</label>
-      <button id="theme-toggle">Toggle Dark / Light</button>
+      <label>Theme</label><button id="theme-toggle">Toggle Dark / Light</button>
     </div>
     <div class="setting-group">
-      <label>Grid</label>
-      <button id="grid-toggle">Toggle Grid</button>
+      <label>Grid</label><button id="grid-toggle">Toggle Grid</button>
     </div>
     <div class="setting-group">
       <label>Account Code</label>
@@ -198,13 +158,10 @@
       <button id="copy-code">Copy Code</button>
       <button id="load-code">Load from Code</button>
     </div>
-    <div class="setting-group">
-      <button id="close-settings">Close</button>
-    </div>
+    <div class="setting-group"><button id="close-settings">Close</button></div>
   </div>
 
-  <!-- Achievements Modal -->
-  <div id="achievements-modal" role="dialog" aria-modal="true" aria-labelledby="achievements-title">
+  <div id="achievements-modal">
     <h2>Achievements</h2>
     <div id="achievements-list-modal" style="max-height:200px; overflow-y:auto;"></div>
     <button id="close-achievements" style="margin-top:10px;">Close</button>
@@ -215,18 +172,14 @@
   <script>
 (() => {
   const CELL_SIZE = 20;
-  const POWERUP_DURATION_ORANGE = 20000;
-  const POWERUP_DURATION_HALF = 5000;
-  const POWERUP_DURATION_INV = 10000;
-  const POWERUP_DURATION_SCORE = 10000;
+  const POWERUP_DURATION = { orange: 20000, half: 5000, inv: 10000, score: 10000 };
 
   let canvas = document.getElementById("game");
   let ctx = canvas.getContext("2d");
   let width, height, columns, rows;
   let snake = [], direction = "Right", nextDirection = "Right";
   let food = null, foodIsPowerup = false;
-  let powerupActive = false, powerupEndTime = 0;
-  let powerupType = "";
+  let powerupActive = false, powerupEndTime = 0, powerupType = "";
   let snakeColor = "green", score = 0, gameOver = false, showGrid = false, darkTheme = true;
   let updateDelay = 100, lastUpdateTime = 0, gamePaused = false;
 
@@ -253,274 +206,85 @@
 
   function encodeAccount(obj){return btoa(JSON.stringify(obj));}
   function decodeAccount(code){try{return JSON.parse(atob(code));}catch{return null;}}
-  function saveAccount(){
-    localStorage.setItem("snakeAccount", JSON.stringify(account));
-    accountCodeBox.value = encodeAccount(account);
-    highscoreDiv.textContent = "Highscore: "+account.highscore;
-  }
-  function loadAccount(){
-    let data = localStorage.getItem("snakeAccount");
-    if(data) account=JSON.parse(data);
-    if(!account.achievements) account.achievements={};
-    accountCodeBox.value=encodeAccount(account);
-    highscoreDiv.textContent="Highscore:"+account.highscore;
-  }
+  function saveAccount(){ localStorage.setItem("snakeAccount", JSON.stringify(account)); accountCodeBox.value = encodeAccount(account); highscoreDiv.textContent = "Highscore: "+account.highscore; }
+  function loadAccount(){ let data=localStorage.getItem("snakeAccount"); if(data) account=JSON.parse(data); if(!account.achievements) account.achievements={}; accountCodeBox.value=encodeAccount(account); highscoreDiv.textContent="Highscore:"+account.highscore; }
 
-  function resize(){
-    width=window.innerWidth;
-    height=window.innerHeight;
-    canvas.width=width;
-    canvas.height=height;
-    columns=Math.floor(width/CELL_SIZE);
-    rows=Math.floor(height/CELL_SIZE);
-  }
-
-  function resetGame(){
-    snakeColor=darkTheme?"green":"#007700";
-    powerupActive=false;
-    powerupType="";
-    powerupEndTime=0;
-    powerupBarContainer.style.display="none";
-    gameOver=false;
-    score=0;
-    direction=nextDirection="Right";
-    const startX=Math.floor(columns/2), startY=Math.floor(rows/2);
-    snake=[{x:startX,y:startY},{x:startX-1,y:startY},{x:startX-2,y:startY}];
-    placeFood();
-    scoreDiv.textContent="Score:"+score;
-    gameOverDiv.style.display="none";
-  }
+  function resize(){ width=window.innerWidth; height=window.innerHeight; canvas.width=width; canvas.height=height; columns=Math.floor(width/CELL_SIZE); rows=Math.floor(height/CELL_SIZE); }
+  function resetGame(){ snakeColor=darkTheme?"green":"#007700"; powerupActive=false; powerupType=""; powerupEndTime=0; powerupBarContainer.style.display="none"; gameOver=false; score=0; direction=nextDirection="Right"; const startX=Math.floor(columns/2), startY=Math.floor(rows/2); snake=[{x:startX,y:startY},{x:startX-1,y:startY},{x:startX-2,y:startY}]; placeFood(); scoreDiv.textContent="Score:"+score; gameOverDiv.style.display="none"; }
 
   function placeFood(){
     while(true){
-      let x=Math.floor(Math.random()*columns),y=Math.floor(Math.random()*rows);
+      let x=Math.floor(Math.random()*columns), y=Math.floor(Math.random()*rows);
       if(!snake.some(seg=>seg.x===x && seg.y===y)){
         food={x,y};
         let r=Math.random();
-        if(r<0.05) foodIsPowerup = "orange";
-        else if(r<0.05+0.05) foodIsPowerup = "half";
-        else if(r<0.10+0.05) foodIsPowerup = "inv";
-        else if(r<0.15+0.05) foodIsPowerup = "score";
-        else foodIsPowerup = false;
+        if(r<0.05) foodIsPowerup="orange";
+        else if(r<0.10) foodIsPowerup="half";
+        else if(r<0.12) foodIsPowerup="inv";
+        else if(r<0.13) foodIsPowerup="score";
+        else foodIsPowerup=false;
         break;
       }
     }
   }
 
   function activatePowerup(type){
-    powerupActive=true;
-    powerupType=type;
-    powerupBarContainer.style.display="block";
+    powerupActive=true; powerupType=type; powerupBarContainer.style.display="block";
     switch(type){
-      case "orange":
-        snakeColor="orange"; powerupEndTime=Date.now()+POWERUP_DURATION_ORANGE; powerupBar.style.backgroundColor="orange"; break;
-      case "half":
-        snakeColor="blue"; powerupEndTime=Date.now()+POWERUP_DURATION_HALF; powerupBar.style.backgroundColor="blue"; break;
-      case "inv":
-        snakeColor="cyan"; powerupEndTime=Date.now()+POWERUP_DURATION_INV; powerupBar.style.backgroundColor="cyan"; break;
-      case "score":
-        snakeColor="magenta"; powerupEndTime=Date.now()+POWERUP_DURATION_SCORE; powerupBar.style.backgroundColor="magenta"; break;
+      case "orange": snakeColor="orange"; powerupEndTime=Date.now()+POWERUP_DURATION.orange; powerupBar.style.backgroundColor="orange"; break;
+      case "half": snakeColor="blue"; powerupEndTime=Date.now()+POWERUP_DURATION.half; powerupBar.style.backgroundColor="blue"; break;
+      case "inv": snakeColor="cyan"; powerupEndTime=Date.now()+POWERUP_DURATION.inv; powerupBar.style.backgroundColor="cyan"; break;
+      case "score": snakeColor="magenta"; powerupEndTime=Date.now()+POWERUP_DURATION.score; powerupBar.style.backgroundColor="magenta"; break;
     }
   }
 
-  function drawCell(x,y,color){
-    ctx.fillStyle=color;
-    ctx.fillRect(x*CELL_SIZE,y*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-    ctx.strokeStyle=darkTheme?"#222":"#ccc";
-    ctx.lineWidth=1;
-    ctx.strokeRect(x*CELL_SIZE,y*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-  }
+  function drawCell(x,y,color){ ctx.fillStyle=color; ctx.fillRect(x*CELL_SIZE,y*CELL_SIZE,CELL_SIZE,CELL_SIZE); ctx.strokeStyle=darkTheme?"#222":"#ccc"; ctx.lineWidth=1; ctx.strokeRect(x*CELL_SIZE,y*CELL_SIZE,CELL_SIZE,CELL_SIZE); }
+  function drawGrid(){ ctx.strokeStyle=darkTheme?"#222":"#ccc"; ctx.lineWidth=1; for(let x=0;x<=columns;x++){ctx.beginPath(); ctx.moveTo(x*CELL_SIZE,0); ctx.lineTo(x*CELL_SIZE,rows*CELL_SIZE); ctx.stroke();} for(let y=0;y<=rows;y++){ctx.beginPath(); ctx.moveTo(0,y*CELL_SIZE); ctx.lineTo(columns*CELL_SIZE,y*CELL_SIZE); ctx.stroke();} }
+  function draw(){ ctx.clearRect(0,0,width,height); if(showGrid) drawGrid(); drawCell(food.x,food.y,foodIsPowerup?{"orange":"orange","half":"blue","inv":"cyan","score":"magenta"}[foodIsPowerup]||"red"); snake.forEach((seg,i)=>drawCell(seg.x,seg.y,i===0?"lime":snakeColor)); }
 
-  function drawGrid(){
-    ctx.strokeStyle=darkTheme?"#222":"#ccc";
-    ctx.lineWidth=1;
-    for(let x=0;x<=columns;x++){
-      ctx.beginPath();
-      ctx.moveTo(x*CELL_SIZE,0);
-      ctx.lineTo(x*CELL_SIZE,rows*CELL_SIZE);
-      ctx.stroke();
-    }
-    for(let y=0;y<=rows;y++){
-      ctx.beginPath();
-      ctx.moveTo(0,y*CELL_SIZE);
-      ctx.lineTo(columns*CELL_SIZE,y*CELL_SIZE);
-      ctx.stroke();
-    }
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,width,height);
-    if(showGrid) drawGrid();
-    drawCell(food.x,food.y,foodIsPowerup?{"orange":"orange","half":"blue","inv":"cyan","score":"magenta"}[foodIsPowerup]||"red");
-    snake.forEach((seg,i)=>drawCell(seg.x,seg.y,i===0?"lime":snakeColor));
-  }
-
-  function endGame(){
-    gameOver=true;
-    gameOverDiv.style.display="block";
-    powerupBarContainer.style.display="none";
-    if(score>account.highscore){
-      account.highscore=score;
-      saveAccount();
-    }
-  }
-
-  function checkAchievements(){
-    achievementScores.forEach(val=>{
-      if(score>=val && !account.achievements[val]){
-        account.achievements[val]=true;
-        alert("Achievement unlocked: "+val+" points!");
-        saveAccount();
-      }
-    });
-  }
-
-  function renderAchievementsModal(){
-    const container=document.getElementById("achievements-list-modal");
-    container.innerHTML="";
-    achievementScores.forEach(scoreVal=>{
-      const unlocked=account.achievements[scoreVal];
-      const div=document.createElement("div");
-      div.textContent=scoreVal+" points";
-      div.style.color=unlocked?"lime":(darkTheme?"#888":"#555");
-      container.appendChild(div);
-    });
-  }
+  function endGame(){ gameOver=true; gameOverDiv.style.display="block"; powerupBarContainer.style.display="none"; if(score>account.highscore){account.highscore=score; saveAccount();} }
+  function checkAchievements(){ achievementScores.forEach(val=>{ if(score>=val && !account.achievements[val]){ account.achievements[val]=true; alert("Achievement unlocked: "+val+" points!"); saveAccount(); } }); }
+  function renderAchievementsModal(){ const container=document.getElementById("achievements-list-modal"); container.innerHTML=""; achievementScores.forEach(scoreVal=>{ const unlocked=account.achievements[scoreVal]; const div=document.createElement("div"); div.textContent=scoreVal+" points"; div.style.color=unlocked?"lime":(darkTheme?"#888":"#555"); container.appendChild(div); }); }
 
   function update(timestamp){
     if(!lastUpdateTime) lastUpdateTime=timestamp;
-    if(timestamp-lastUpdateTime<updateDelay){
-      requestAnimationFrame(update);
-      return;
-    }
+    if(timestamp-lastUpdateTime<updateDelay){ requestAnimationFrame(update); return; }
     lastUpdateTime=timestamp;
-    if(gameOver||gamePaused){
-      requestAnimationFrame(update);
-      return;
-    }
+    if(gameOver||gamePaused){ requestAnimationFrame(update); return; }
 
     if(powerupActive){
-      let remaining=(powerupEndTime-Date.now())/(
-        powerupType==="orange"?POWERUP_DURATION_ORANGE:
-        powerupType==="half"?POWERUP_DURATION_HALF:
-        powerupType==="inv"?POWERUP_DURATION_INV:
-        POWERUP_DURATION_SCORE
-      );
-      if(remaining<=0){
-        powerupActive=false;
-        powerupType="";
-        snakeColor=darkTheme?"green":"#007700";
-        powerupBarContainer.style.display="none";
-      } else {
-        powerupBar.style.width=(remaining*100)+"%";
-      }
+      let remaining=(powerupEndTime-Date.now())/POWERUP_DURATION[powerupType];
+      if(remaining<=0){ powerupActive=false; powerupType=""; snakeColor=darkTheme?"green":"#007700"; powerupBarContainer.style.display="none"; } 
+      else powerupBar.style.width=(remaining*100)+"%";
     }
 
     const opposites={Up:"Down",Down:"Up",Left:"Right",Right:"Left"};
     if(nextDirection!==opposites[direction]) direction=nextDirection;
     let head={...snake[0]};
-    switch(direction){
-      case "Right": head.x++; break;
-      case "Left": head.x--; break;
-      case "Up": head.y--; break;
-      case "Down": head.y++; break;
-    }
-    if(head.x<0||head.x>=columns||head.y<0||snake.some(seg=>seg.x===head.x&&seg.y===head.y)){
-      endGame();
-      requestAnimationFrame(update);
-      return;
-    }
+    switch(direction){ case "Right": head.x++; break; case "Left": head.x--; break; case "Up": head.y--; break; case "Down": head.y++; break; }
+    if(head.x<0||head.x>=columns||head.y<0||snake.some(seg=>seg.x===head.x&&seg.y===head.y)){ endGame(); requestAnimationFrame(update); return; }
     snake.unshift(head);
-    if(head.x===food.x && head.y===food.y){
-      score++;
-      scoreDiv.textContent="Score:"+score;
-      if(foodIsPowerup) activatePowerup(foodIsPowerup);
-      placeFood();
-      checkAchievements();
-    } else {
-      snake.pop();
-    }
-    draw();
-    requestAnimationFrame(update);
+    if(head.x===food.x && head.y===food.y){ score++; scoreDiv.textContent="Score:"+score; if(foodIsPowerup) activatePowerup(foodIsPowerup); placeFood(); checkAchievements(); } else { snake.pop(); }
+    draw(); requestAnimationFrame(update);
   }
 
-  // Keyboard & touch
-  window.addEventListener("keydown",e=>{
-    if(gameOver&&(e.key==="r"||e.key==="R")){ resetGame(); return; }
-    const map={ArrowUp:"Up",ArrowDown:"Down",ArrowLeft:"Left",ArrowRight:"Right",w:"Up",s:"Down",a:"Left",d:"Right"};
-    let dir=map[e.key];
-    if(!dir) return;
-    const opposites={Up:"Down",Down:"Up",Left:"Right",Right:"Left"};
-    if(dir!==opposites[direction]) nextDirection=dir;
-  });
+  window.addEventListener("keydown",e=>{ if(gameOver&&(e.key==="r"||e.key==="R")){ resetGame(); return; } const map={ArrowUp:"Up",ArrowDown:"Down",ArrowLeft:"Left",ArrowRight:"Right",w:"Up",s:"Down",a:"Left",d:"Right"}; let dir=map[e.key]; if(!dir) return; const opposites={Up:"Down",Down:"Up",Left:"Right",Right:"Left"}; if(dir!==opposites[direction]) nextDirection=dir; });
 
   let touchStartX=null, touchStartY=null, SWIPE_THRESHOLD=30;
-  canvas.addEventListener("touchstart",e=>{
-    e.preventDefault();
-    if(gameOver){ resetGame(); return; }
-    const touch=e.touches[0];
-    touchStartX=touch.clientX;
-    touchStartY=touch.clientY;
-  },{passive:false});
-
-  canvas.addEventListener("touchend",e=>{
-    e.preventDefault();
-    if(touchStartX===null||touchStartY===null) return;
-    const touch=e.changedTouches[0];
-    let dx=touch.clientX-touchStartX, dy=touch.clientY-touchStartY;
-    if(Math.abs(dx)<SWIPE_THRESHOLD&&Math.abs(dy)<SWIPE_THRESHOLD){
-      if(gameOver) resetGame();
-      touchStartX=null; touchStartY=null;
-      return;
-    }
-    if(Math.abs(dx)>Math.abs(dy)){
-      if(dx>0&&direction!=="Left") nextDirection="Right";
-      else if(dx<0&&direction!=="Right") nextDirection="Left";
-    }else{
-      if(dy>0&&direction!=="Up") nextDirection="Down";
-      else if(dy<0&&direction!=="Down") nextDirection="Up";
-    }
-    touchStartX=null; touchStartY=null;
-  },{passive:false});
+  canvas.addEventListener("touchstart",e=>{ e.preventDefault(); if(gameOver){ resetGame(); return; } const touch=e.touches[0]; touchStartX=touch.clientX; touchStartY=touch.clientY; },{passive:false});
+  canvas.addEventListener("touchend",e=>{ e.preventDefault(); if(touchStartX===null||touchStartY===null) return; const touch=e.changedTouches[0]; let dx=touch.clientX-touchStartX, dy=touch.clientY-touchStartY; if(Math.abs(dx)<SWIPE_THRESHOLD&&Math.abs(dy)<SWIPE_THRESHOLD){ if(gameOver) resetGame(); touchStartX=null; touchStartY=null; return; } if(Math.abs(dx)>Math.abs(dy)){ if(dx>0&&direction!=="Left") nextDirection="Right"; else if(dx<0&&direction!=="Right") nextDirection="Left"; }else{ if(dy>0&&direction!=="Up") nextDirection="Down"; else if(dy<0&&direction!=="Down") nextDirection="Up"; } touchStartX=null; touchStartY=null; },{passive:false});
 
   gameOverDiv.addEventListener("click",()=>{ if(gameOver) resetGame(); });
 
-  // Settings & Achievements buttons
-  settingsBtn.addEventListener("click",()=>{
-    settingsModal.classList.toggle("show");
-    gamePaused = settingsModal.classList.contains("show");
-  });
+  settingsBtn.addEventListener("click",()=>{ settingsModal.classList.toggle("show"); gamePaused=settingsModal.classList.contains("show"); });
   closeSettingsBtn.addEventListener("click",()=>{ settingsModal.classList.remove("show"); gamePaused=false; });
-  achievementsBtn.addEventListener("click",()=>{
-    renderAchievementsModal();
-    achievementsModal.style.display="block";
-    achievementsModal.style.opacity="1";
-    achievementsModal.style.transform="translate(-50%, -50%) scale(1)";
-    gamePaused=true;
-  });
+  achievementsBtn.addEventListener("click",()=>{ renderAchievementsModal(); achievementsModal.style.display="block"; achievementsModal.style.opacity="1"; achievementsModal.style.transform="translate(-50%, -50%) scale(1)"; gamePaused=true; });
   closeAchievementsBtn.addEventListener("click",()=>{ achievementsModal.style.display="none"; achievementsModal.style.opacity="0"; achievementsModal.style.transform="translate(-50%, -50%) scale(0.9)"; gamePaused=false; });
   difficultyButtons.forEach(btn=>{ btn.addEventListener("click",()=>{ updateDelay=parseInt(btn.dataset.speed,10); settingsModal.classList.remove("show"); gamePaused=false; }); });
-  themeToggleBtn.addEventListener("click",()=>{
-    darkTheme=!darkTheme;
-    if(darkTheme){ document.body.classList.remove("light-theme"); document.body.style.backgroundColor="var(--bg-dark)"; document.body.style.color="var(--text-dark)"; }
-    else{ document.body.classList.add("light-theme"); document.body.style.backgroundColor="var(--bg-light)"; document.body.style.color="var(--text-light)"; }
-    snakeColor=darkTheme?"green":"#007700";
-    draw();
-    renderAchievementsModal();
-  });
+  themeToggleBtn.addEventListener("click",()=>{ darkTheme=!darkTheme; document.body.classList.toggle("light-theme", !darkTheme); snakeColor=darkTheme?"green":"#007700"; draw(); renderAchievementsModal(); });
   gridToggleBtn.addEventListener("click",()=>{ showGrid=!showGrid; draw(); });
   copyCodeBtn.addEventListener("click",()=>{ accountCodeBox.select(); document.execCommand("copy"); });
-  loadCodeBtn.addEventListener("click",()=>{
-    let code=prompt("Paste your account code:");
-    let acc=decodeAccount(code);
-    if(acc && typeof acc.highscore==="number"){
-      account=acc;
-      if(!account.achievements) account.achievements={};
-      saveAccount();
-      renderAchievementsModal();
-      alert("Account loaded!");
-    }else alert("Invalid code!");
-  });
+  loadCodeBtn.addEventListener("click",()=>{ let code=prompt("Paste your account code:"); let acc=decodeAccount(code); if(acc && typeof acc.highscore==="number"){ account=acc; if(!account.achievements) account.achievements={}; saveAccount(); renderAchievementsModal(); alert("Account loaded!"); }else alert("Invalid code!"); });
 
   function init(){ resize(); resetGame(); loadAccount(); renderAchievementsModal(); requestAnimationFrame(update); }
   window.addEventListener("resize",()=>{ resize(); draw(); });
