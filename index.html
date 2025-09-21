@@ -102,8 +102,8 @@
   const CELL_SIZE = 20;
   const BASE_UPDATE_DELAY = 100; // ms per step (default)
   const POWERUP_DURATIONS = { orange:20000, half:5000, inv:10000, score:10000 };
-  // spawn probabilities (must sum <= 1): orange 5%, half 5%, inv 2%, score 1%, rest normal
-  const PROB = { orange:0.05, half:0.05, inv:0.02, score:0.01 };
+  // spawn probabilities (must sum <= 1): orange 10%, half 5%, inv 2%, score 1%, rest normal
+  const PROB = { orange:0.10, half:0.05, inv:0.02, score:0.01 };
 
   // --- DOM
   const canvas = document.getElementById('game');
@@ -134,7 +134,7 @@
   let food = null, foodIsPowerup = false;
   let score = 0;
   let account = { highscore:0, achievements:{} };
-  const achievementScores = [41,50,67,69,100,150,200,250,300,350,400,450,500];
+  const achievementScores = [41,50,67,69,100,150,200,250,300,350,400,450,500,];
 
   // powerup runtime state
   let powerupActive = false, powerupType = "", powerupEndTime = 0;
