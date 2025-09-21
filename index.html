@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width,initial-scale=1" />
 <title>Snake Game — Fixed</title>
 <style>
   :root{
@@ -25,13 +25,14 @@
     background:#444; border-radius:8px; overflow:hidden; z-index:20; display:none;
   }
   #powerup-bar{width:100%; height:100%; background:orange; transition:width 0.1s linear, background-color 0.2s;}
-  #settings-btn,#achievements-btn{
+  #settings-btn,#achievements-btn,#credits-btn{
     position:fixed; top:10px; padding:6px 12px; font-size:18px; z-index:25; border-radius:8px; border:none; cursor:pointer;
     background:var(--btn-bg-dark); color:var(--btn-text-dark);
   }
   #settings-btn{ right:10px; }
   #achievements-btn{ right:140px; }
-  #settings-btn:hover,#achievements-btn:hover{ background:var(--btn-text-dark); color:var(--btn-bg-dark); }
+  #credits-btn{ right:270px; }
+  #settings-btn:hover,#achievements-btn:hover,#credits-btn:hover{ background:var(--btn-text-dark); color:var(--btn-bg-dark); }
   .modal{
     position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.95);
     min-width:260px; padding:16px; border-radius:12px; box-shadow:0 8px 40px rgba(0,0,0,0.6);
@@ -47,7 +48,7 @@
   canvas{ display:block; }
   /* Light theme */
   .light-theme{ background:var(--bg-light); color:var(--text-light); }
-  .light-theme #settings-modal, .light-theme #achievements-modal{ background:#fff; color:var(--text-light); box-shadow:0 8px 32px rgba(0,0,0,0.08); }
+  .light-theme #settings-modal, .light-theme #achievements-modal, .light-theme #credits-modal{ background:#fff; color:var(--text-light); box-shadow:0 8px 32px rgba(0,0,0,0.08); }
   .light-theme .setting-group button{ background:var(--btn-bg-light); color:var(--btn-text-light); }
 </style>
 </head>
@@ -59,6 +60,7 @@
 
   <button id="settings-btn">⚙️</button>
   <button id="achievements-btn">🏆</button>
+  <button id="credits-btn">🎬 Credits</button>
 
   <!-- Settings -->
   <div id="settings-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -94,6 +96,15 @@
     <button id="close-achievements">Close</button>
   </div>
 
+  <!-- Credits -->
+  <div id="credits-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="credits-title" style="overflow:hidden;">
+    <h3 style="margin:0 0 8px 0;color:inherit">Credits</h3>
+    <div id="credits-scroll" style="position:relative; width:100%; height:180px; overflow:hidden; background:rgba(0,0,0,0.7); border-radius:8px;">
+      <div id="credits-names" style="position:absolute; width:100%; text-align:center; font-size:20px; color:gold;"></div>
+    </div>
+    <button id="close-credits">Close</button>
+  </div>
+
   <canvas id="game"></canvas>
 
 <script>
@@ -116,16 +127,71 @@
 
   const settingsBtn = document.getElementById('settings-btn');
   const achievementsBtn = document.getElementById('achievements-btn');
+  const creditsBtn = document.getElementById('credits-btn');
   const settingsModal = document.getElementById('settings-modal');
   const achievementsModal = document.getElementById('achievements-modal');
+  const creditsModal = document.getElementById('credits-modal');
   const themeToggleBtn = document.getElementById('theme-toggle');
   const gridToggleBtn = document.getElementById('grid-toggle');
   const closeSettingsBtn = document.getElementById('close-settings');
   const closeAchievementsBtn = document.getElementById('close-achievements');
+  const closeCreditsBtn = document.getElementById('close-credits');
   const difficultyButtons = document.querySelectorAll('.difficulty-btn');
   const accountCodeBox = document.getElementById('account-code');
   const copyCodeBtn = document.getElementById('copy-code');
   const loadCodeBtn = document.getElementById('load-code');
+  const creditsNamesDiv = document.getElementById('credits-names');
+  const creditsScrollDiv = document.getElementById('credits-scroll');
+
+  // --- CREDITS DATA ---
+  // Edit this array to add your custom names!
+  const creditsList = [
+    "Your Name",
+    "Another Name",
+    "Special Thanks: Someone Else",
+    "Game Design: You",
+    "Programming: You",
+    "Music: Open Source",
+    "Inspired by Classic Snake",
+    "Thank you for playing!"
+  ];
+
+  let creditsY = 180;
+  let creditsAnim = null;
+
+  function showCredits() {
+    creditsNamesDiv.innerHTML = creditsList.map(name => `<div>${name}</div>`).join('');
+    creditsY = creditsScrollDiv.offsetHeight;
+    creditsNamesDiv.style.top = creditsY + "px";
+    creditsModal.classList.add('show');
+    gamePaused = true; // PAUSE GAME when credits open
+    animateCredits();
+  }
+
+  function animateCredits() {
+    creditsY -= 0.7; // speed
+    creditsNamesDiv.style.top = creditsY + "px";
+    if (creditsY + creditsNamesDiv.offsetHeight > 0) {
+      creditsAnim = requestAnimationFrame(animateCredits);
+    } else {
+      // Close credits after a short pause
+      setTimeout(() => {
+        hideCredits();
+      }, 1200);
+    }
+  }
+
+  function hideCredits() {
+    creditsModal.classList.remove('show');
+    if (creditsAnim) cancelAnimationFrame(creditsAnim);
+    gamePaused = false; // RESUME GAME when credits close
+  }
+
+  creditsBtn.addEventListener('click', showCredits);
+  closeCreditsBtn.addEventListener('click', hideCredits);
+  creditsModal.addEventListener('click', function(e){
+    if(e.target === creditsModal) hideCredits();
+  });
 
   // --- GAME STATE
   let width = 0, height = 0, columns = 0, rows = 0;
@@ -399,6 +465,12 @@
     gamePaused = settingsModal.classList.contains('show');
   });
   closeSettingsBtn.addEventListener('click', () => { settingsModal.classList.remove('show'); gamePaused = false; });
+  settingsModal.addEventListener('click', function(e){
+    if(e.target === settingsModal){
+      settingsModal.classList.remove('show');
+      gamePaused = false;
+    }
+  });
 
   achievementsBtn.addEventListener('click', () => { renderAchievementsModal(); achievementsModal.classList.add('show'); gamePaused = true; });
   closeAchievementsBtn.addEventListener('click', () => { achievementsModal.classList.remove('show'); gamePaused = false; });
