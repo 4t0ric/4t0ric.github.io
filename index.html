@@ -284,10 +284,18 @@
 
   
 
-    // re-trace a simple outline box around the filled silhouette for readability
-    g.globalAlpha = 0.9;
-    g.strokeRect(1,1,CELL_SIZE-2,CELL_SIZE-2);
-    g.globalAlpha = 1;
+    // soft outline (glow effect instead of hard stroke box)
+g.save();
+g.globalAlpha = 0.35;
+g.strokeStyle = palette.outline;
+g.lineWidth = 2;
+
+// leichter "Glow" Effekt durch mehrfaches Zeichnen
+for (let i = 0; i < 2; i++) {
+  g.strokeRect(1 + i, 1 + i, CELL_SIZE - 2 - i * 2, CELL_SIZE - 2 - i * 2);
+}
+
+g.restore();
 
     if(type === 'head'){
       // eyes (drawn near the front/right side, since head faces right by default)
