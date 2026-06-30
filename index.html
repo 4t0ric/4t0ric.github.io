@@ -50,6 +50,21 @@
   .light-theme{ background:var(--bg-light); color:var(--text-light); }
   .light-theme #settings-modal, .light-theme #achievements-modal, .light-theme #credits-modal{ background:#fff; color:var(--text-light); box-shadow:0 8px 32px rgba(0,0,0,0.08); }
   .light-theme .setting-group button{ background:var(--btn-bg-light); color:var(--btn-text-light); }
+
+  /* --- Skin selector --- */
+  #skin-list{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:6px; max-height:220px; overflow-y:auto; margin-bottom:6px;
+  }
+  .skin-option{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    width:100%; padding:6px; border-radius:8px; border:2px solid transparent; cursor:pointer;
+    background:var(--btn-bg-dark); color:var(--btn-text-dark); font-size:12px; box-sizing:border-box;
+  }
+  .light-theme .skin-option{ background:var(--btn-bg-light); color:var(--btn-text-light); }
+  .skin-option canvas{ image-rendering:pixelated; width:32px; height:32px; }
+  .skin-option.selected{ border-color:#2ecc40; }
+  .skin-option.locked{ opacity:0.45; cursor:not-allowed; }
+  .skin-option .skin-name{ text-align:center; }
 </style>
 </head>
 <body>
@@ -77,6 +92,10 @@
     <div class="setting-group">
       <label>Grid</label>
       <button id="grid-toggle">Toggle Grid</button>
+    </div>
+    <div class="setting-group">
+      <label>Skins</label>
+      <div id="skin-list"></div>
     </div>
     <div class="setting-group">
       <label>Account Code</label>
@@ -142,6 +161,7 @@
   const loadCodeBtn = document.getElementById('load-code');
   const creditsNamesDiv = document.getElementById('credits-names');
   const creditsScrollDiv = document.getElementById('credits-scroll');
+  const skinListDiv = document.getElementById('skin-list');
 
   // --- CREDITS DATA ---
   // Edit this array to add your custom names!
@@ -190,13 +210,202 @@
     if(e.target === creditsModal) hideCredits();
   });
 
+  // ====================================================================
+  // --- SKIN SYSTEM ---------------------------------------------------
+  // ====================================================================
+  // Each skin is defined purely by a color palette + pattern "mode".
+  // All pixel-art sprites (head / body / curve / tail) are generated
+  // procedurally on small offscreen canvases, so no external image
+  // files are needed at all.
+  const SKINS = [
+    { id:1, name:"Skin 1",  desc:"Green Snake",          base:"#2ecc40", accent:"#1e8a2a", outline:"#0d3010", eye:"#000000", mode:"solid"   },
+    { id:2, name:"Skin 2",  desc:"Albino Kornnatter",    base:"#fdf6e3", accent:"#f58d4d", outline:"#c2a86b", eye:"#e74c3c", mode:"speckle" },
+    { id:3, name:"Skin 3",  desc:"Königsnatter",         base:"#161616", accent:"#e74c3c", outline:"#000000", eye:"#ffffff", mode:"stripe"  },
+    { id:4, name:"Skin 4",  desc:"Python",               base:"#c9a36a", accent:"#6b4a25", outline:"#3a2812", eye:"#000000", mode:"blotch"  },
+    { id:5, name:"Skin 5",  desc:"Blaue Fantasy",        base:"#3b82f6", accent:"#a78bfa", outline:"#1e3a8a", eye:"#ffffff", mode:"stripe"  },
+    { id:6, name:"Skin 6",  desc:"Rote Schlange",        base:"#e74c3c", accent:"#992d22", outline:"#4a1410", eye:"#000000", mode:"speckle" },
+    { id:7, name:"Skin 7",  desc:"Schwarze Schlange",    base:"#1c1c1c", accent:"#3a3a3a", outline:"#000000", eye:"#e74c3c", mode:"blotch"  },
+    { id:8, name:"Skin 8",  desc:"Goldene Schlange",     base:"#f1c40f", accent:"#b8860b", outline:"#5c4400", eye:"#000000", mode:"stripe"  }
+  ];
+  const SKIN_UNLOCK_STEP = 10; // skin N unlocks at (N-1)*10 points
+
+  function skinUnlockScore(skinId){ return (skinId - 1) * SKIN_UNLOCK_STEP; }
+
+  // pixel grid resolution used to build each sprite (retro pixel-art look)
+  const PIX = 8;
+
+  function px(g, x, y, size, color){
+    if(!color) return;
+    g.fillStyle = color;
+    g.fillRect(Math.round(x*size), Math.round(y*size), Math.ceil(size), Math.ceil(size));
+  }
+
+  function patternColor(palette, x, y, baseColor){
+    if(palette.mode === 'stripe' && (x + y) % 4 === 0) return palette.accent;
+    if(palette.mode === 'blotch' && ((x>>1) + (y>>1)) % 3 === 0) return palette.accent;
+    if(palette.mode === 'speckle' && (x*7 + y*13) % 9 === 0) return palette.accent;
+    return baseColor;
+  }
+
+  // builds one sprite (canvas element, CELL_SIZE x CELL_SIZE) for a given
+  // piece type ('head' | 'body' | 'curve' | 'tail'), drawn in its default
+  // orientation (pointing / connecting to the RIGHT). Rotation happens at
+  // draw time depending on the snake's actual movement direction.
+  function buildSprite(type, palette){
+    const c = document.createElement('canvas');
+    c.width = CELL_SIZE; c.height = CELL_SIZE;
+    const g = c.getContext('2d');
+    const s = CELL_SIZE / PIX;
+
+    for(let y=0;y<PIX;y++){
+      for(let x=0;x<PIX;x++){
+        let filled = false;
+
+        if(type === 'body'){
+          // straight tube, full width, connecting left<->right
+          filled = (y>=2 && y<=5);
+        } else if(type === 'curve'){
+          // L shape connecting TOP edge (mid) and LEFT edge (mid)
+          filled = (x>=2 && x<=5 && y<6) || (y>=2 && y<=5 && x<6);
+        } else if(type === 'head'){
+          // wide rounded head, pointing right
+          filled = (y>=2 && y<=5) || (x>=5 && x<=7 && y>=1 && y<=6);
+        } else if(type === 'tail'){
+          // tapering point at the right edge
+          const margin = Math.min(2, Math.floor(x/2));
+          filled = (y >= 2+margin && y <= 5-margin);
+        }
+
+        if(!filled) continue;
+        let color = patternColor(palette, x, y, palette.base);
+        px(g, x, y, s, color);
+      }
+    }
+
+  
+
+    // re-trace a simple outline box around the filled silhouette for readability
+    g.globalAlpha = 0.9;
+    g.strokeRect(1,1,CELL_SIZE-2,CELL_SIZE-2);
+    g.globalAlpha = 1;
+
+    if(type === 'head'){
+      // eyes (drawn near the front/right side, since head faces right by default)
+      px(g, 6, 1.4, s, palette.eye);
+      px(g, 6, 5.6, s, palette.eye);
+    }
+
+    return c;
+  }
+
+  const skinSpriteCache = {}; // skinId -> {head,body,curve,tail}
+  function getSkinSprites(skinId){
+    if(!skinSpriteCache[skinId]){
+      const palette = SKINS.find(s => s.id === skinId) || SKINS[0];
+      skinSpriteCache[skinId] = {
+        head:  buildSprite('head', palette),
+        body:  buildSprite('body', palette),
+        curve: buildSprite('curve', palette),
+        tail:  buildSprite('tail', palette)
+      };
+    }
+    return skinSpriteCache[skinId];
+  }
+
+  // small thumbnail used in the settings skin picker
+  function buildThumbnail(skinId){
+    const sprites = getSkinSprites(skinId);
+    const c = document.createElement('canvas');
+    c.width = CELL_SIZE; c.height = CELL_SIZE;
+    const g = c.getContext('2d');
+    g.drawImage(sprites.head, 0, 0);
+    return c;
+  }
+
+  function dirToAngleRad(dir){
+    const map = { Right:0, Down:Math.PI/2, Left:Math.PI, Up:-Math.PI/2 };
+    return map[dir] || 0;
+  }
+  function oppositeDir(dir){
+    const map = { Up:'Down', Down:'Up', Left:'Right', Right:'Left' };
+    return map[dir];
+  }
+  function dirBetween(a, b){
+    if(b.x > a.x) return 'Right';
+    if(b.x < a.x) return 'Left';
+    if(b.y > a.y) return 'Down';
+    if(b.y < a.y) return 'Up';
+    return null;
+  }
+
+  // maps the two "connection directions" of a curve piece (sorted) to a
+  // rotation angle, given that the base sprite connects Left<->Up at angle 0.
+  function curveAngle(dirA, dirB){
+    const key = [dirA, dirB].sort().join('-');
+    const table = {
+      'Left-Up': 0,
+      'Right-Up': Math.PI/2,
+      'Down-Right': Math.PI,
+      'Down-Left': -Math.PI/2
+    };
+    return (key in table) ? table[key] : 0;
+  }
+
+  function renderSkinSelector(){
+    skinListDiv.innerHTML = '';
+    SKINS.forEach(skin => {
+      const unlocked = !!account.skins[skin.id];
+      const opt = document.createElement('div');
+      opt.className = 'skin-option' + (unlocked ? '' : ' locked') + (account.selectedSkin === skin.id ? ' selected' : '');
+      const thumb = unlocked ? buildThumbnail(skin.id) : null;
+
+      const thumbWrap = document.createElement('div');
+      if(thumb){
+        thumbWrap.appendChild(thumb);
+      } else {
+        thumbWrap.textContent = '🔒';
+        thumbWrap.style.fontSize = '20px';
+      }
+      opt.appendChild(thumbWrap);
+
+      const label = document.createElement('div');
+      label.className = 'skin-name';
+      label.textContent = unlocked ? skin.name : (skin.name + ' (Locked, ' + skinUnlockScore(skin.id) + ' Pkt.)');
+      opt.appendChild(label);
+
+      if(unlocked){
+        opt.addEventListener('click', () => {
+          account.selectedSkin = skin.id;
+          saveAccount();
+          renderSkinSelector();
+        });
+      }
+      skinListDiv.appendChild(opt);
+    });
+  }
+
+  function checkSkinUnlocks(){
+    let unlockedNew = false;
+    SKINS.forEach(skin => {
+      const threshold = skinUnlockScore(skin.id);
+      if(score >= threshold && !account.skins[skin.id]){
+        account.skins[skin.id] = true;
+        unlockedNew = true;
+      }
+    });
+    if(unlockedNew){
+      saveAccount();
+      renderSkinSelector();
+    }
+  }
+
   // --- GAME STATE
   let width = 0, height = 0, columns = 0, rows = 0;
   let snake = [];
   let direction = 'Right', nextDirection = 'Right';
   let food = null, foodIsPowerup = false;
   let score = 0;
-  let account = { highscore:0, achievements:{} };
+  let account = { highscore:0, achievements:{}, skins:{1:true}, selectedSkin:1 };
   const achievementScores = [10,41,50,67,69,100,150,200,250,300,350,400,450,500,];
 
   // powerup runtime state
@@ -213,8 +422,14 @@
   // --- UTIL
   function encodeAccount(obj){ try { return btoa(JSON.stringify(obj)); } catch { return ''; } }
   function decodeAccount(code){ try { return JSON.parse(atob(code)); } catch { return null; } }
-  function saveAccount(){ localStorage.setItem('snakeAccount', JSON.stringify(account)); accountCodeBox.value = encodeAccount(account); highscoreDiv.textContent = 'Highscore: '+account.highscore; }
-  function loadAccount(){ const data = localStorage.getItem('snakeAccount'); if(data) account = JSON.parse(data); if(!account.achievements) account.achievements = {}; accountCodeBox.value = encodeAccount(account); highscoreDiv.textContent = 'Highscore: '+account.highscore; }
+  function ensureAccountDefaults(){
+    if(!account.achievements) account.achievements = {};
+    if(!account.skins) account.skins = {};
+    account.skins[1] = true; // skin 1 is always unlocked
+    if(!account.selectedSkin || !account.skins[account.selectedSkin]) account.selectedSkin = 1;
+  }
+  function saveAccount(){ ensureAccountDefaults(); localStorage.setItem('snakeAccount', JSON.stringify(account)); accountCodeBox.value = encodeAccount(account); highscoreDiv.textContent = 'Highscore: '+account.highscore; }
+  function loadAccount(){ const data = localStorage.getItem('snakeAccount'); if(data) account = JSON.parse(data); ensureAccountDefaults(); accountCodeBox.value = encodeAccount(account); highscoreDiv.textContent = 'Highscore: '+account.highscore; }
 
   // --- RESIZE & INIT
   function resize(){
@@ -329,7 +544,53 @@
     }
   }
 
-  function draw(){
+  // draws one snake sprite piece, rotated, centered at the given cell
+  function drawSnakePiece(sprite, gx, gy, angleRad){
+    const cx = gx*CELL_SIZE + CELL_SIZE/2;
+    const cy = gy*CELL_SIZE + CELL_SIZE/2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angleRad);
+    ctx.drawImage(sprite, -CELL_SIZE/2, -CELL_SIZE/2, CELL_SIZE, CELL_SIZE);
+    ctx.restore();
+  }
+
+  // small living touches: tongue flicker + eye blink, drawn directly on
+  // top of the head sprite. Lightweight (a handful of canvas calls) so it
+  // doesn't affect performance.
+  function drawHeadExtras(gx, gy, angleRad, now){
+    const cx = gx*CELL_SIZE + CELL_SIZE/2;
+    const cy = gy*CELL_SIZE + CELL_SIZE/2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angleRad);
+
+    // tongue flicker: visible for ~150ms every ~1100ms
+    if(now % 1100 < 150){
+      ctx.strokeStyle = '#ff3344';
+      ctx.lineWidth = Math.max(1, CELL_SIZE*0.06);
+      ctx.beginPath();
+      ctx.moveTo(CELL_SIZE/2, 0);
+      ctx.lineTo(CELL_SIZE/2 + CELL_SIZE*0.35, 0);
+      ctx.moveTo(CELL_SIZE/2 + CELL_SIZE*0.35, 0);
+      ctx.lineTo(CELL_SIZE/2 + CELL_SIZE*0.5, -CELL_SIZE*0.12);
+      ctx.moveTo(CELL_SIZE/2 + CELL_SIZE*0.35, 0);
+      ctx.lineTo(CELL_SIZE/2 + CELL_SIZE*0.5, CELL_SIZE*0.12);
+      ctx.stroke();
+    }
+
+    // blink: briefly cover the eyes for ~80ms every ~2600ms
+    if(now % 2600 < 80){
+      ctx.fillStyle = (document.body.classList.contains('light-theme') ? '#fff' : '#000');
+      const s = CELL_SIZE/PIX;
+      ctx.fillRect(CELL_SIZE*0.55, -CELL_SIZE*0.45, s*1.4, s*1.4);
+      ctx.fillRect(CELL_SIZE*0.55, CELL_SIZE*0.1, s*1.4, s*1.4);
+    }
+
+    ctx.restore();
+  }
+
+  function draw(timestamp){
     ctx.clearRect(0,0,width,height);
     if(showGrid) drawGrid();
 
@@ -337,18 +598,47 @@
     const foodColor = foodIsPowerup ? (foodIsPowerup === 'orange' ? 'orange' : (foodIsPowerup === 'half' ? 'blue' : (foodIsPowerup === 'inv' ? 'cyan' : 'magenta'))) : 'red';
     if(food) drawCell(food.x, food.y, foodColor);
 
-    // draw snake
+    // draw snake using the selected skin's pixel-art sprites
+    const sprites = getSkinSprites(account.selectedSkin);
+    const now = timestamp || Date.now();
+    const useInvAlpha = (powerupActive && powerupType === 'inv');
+
+    if(useInvAlpha) ctx.globalAlpha = 0.7;
+
     snake.forEach((seg, i) => {
-      const color = (i===0) ? 'lime' : snakeColor;
-      // visual for invincibility: slightly transparent head/body
-      if(powerupActive && powerupType === 'inv') {
-        ctx.globalAlpha = 0.7;
-        drawCell(seg.x, seg.y, color);
-        ctx.globalAlpha = 1.0;
+      let sprite, angle;
+      if(i === 0){
+        sprite = sprites.head;
+        angle = dirToAngleRad(direction);
+      } else if(i === snake.length - 1){
+        sprite = sprites.tail;
+        const d = dirBetween(snake[i-1], snake[i]) || direction;
+        angle = dirToAngleRad(d);
       } else {
-        drawCell(seg.x, seg.y, color);
+        const inDir = dirBetween(snake[i-1], seg);
+        const outDir = dirBetween(seg, snake[i+1]);
+        if(inDir && outDir && inDir === outDir){
+          sprite = sprites.body;
+          angle = dirToAngleRad(inDir);
+        } else if(inDir && outDir){
+          sprite = sprites.curve;
+          const connA = oppositeDir(inDir);
+          const connB = outDir;
+          angle = curveAngle(connA, connB);
+        } else {
+          sprite = sprites.body;
+          angle = 0;
+        }
       }
+      drawSnakePiece(sprite, seg.x, seg.y, angle);
     });
+
+    if(useInvAlpha) ctx.globalAlpha = 1.0;
+
+    // head extras (tongue / blink) drawn on top, unaffected by inv alpha
+    if(snake.length){
+      drawHeadExtras(snake[0].x, snake[0].y, dirToAngleRad(direction), now);
+    }
   }
 
   // --- GAME LOGIC
@@ -374,11 +664,13 @@
   function update(timestamp){
     if(!lastUpdateTime) lastUpdateTime = timestamp;
     if(timestamp - lastUpdateTime < updateDelay){
+      draw(timestamp);
       requestAnimationFrame(update);
       return;
     }
     lastUpdateTime = timestamp;
     if(gameOver || gamePaused){
+      draw(timestamp);
       requestAnimationFrame(update);
       return;
     }
@@ -423,12 +715,13 @@
       scoreDiv.textContent = 'Score: '+score;
       placeFood();
       checkAchievements();
+      checkSkinUnlocks();
     } else {
       // normal move (pop tail)
       snake.pop();
     }
 
-    draw();
+    draw(timestamp);
     requestAnimationFrame(update);
   }
 
@@ -460,6 +753,7 @@
   settingsBtn.addEventListener('click', () => {
     settingsModal.classList.toggle('show');
     gamePaused = settingsModal.classList.contains('show');
+    if(settingsModal.classList.contains('show')) renderSkinSelector();
   });
   closeSettingsBtn.addEventListener('click', () => { settingsModal.classList.remove('show'); gamePaused = false; });
   settingsModal.addEventListener('click', function(e){
@@ -483,6 +777,7 @@
     // restore snake color to appropriate default
     snakeColor = document.body.classList.contains('light-theme') ? '#007700' : 'green';
     draw();
+    renderSkinSelector();
   });
 
   gridToggleBtn.addEventListener('click', () => { showGrid = !showGrid; draw(); });
@@ -500,7 +795,7 @@
     const code = prompt('Paste your account code:');
     const acc = decodeAccount(code);
     if(acc && typeof acc.highscore === 'number'){
-      account = acc; if(!account.achievements) account.achievements = {}; saveAccount(); renderAchievementsModal(); alert('Account loaded!');
+      account = acc; ensureAccountDefaults(); saveAccount(); renderAchievementsModal(); renderSkinSelector(); alert('Account loaded!');
     } else alert('Invalid code!');
   });
 
@@ -529,6 +824,7 @@
     loadAccount();
     resetGame();
     renderAchievementsModal();
+    renderSkinSelector();
     requestAnimationFrame(update);
   }
   init();
